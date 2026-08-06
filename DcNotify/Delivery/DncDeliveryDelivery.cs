@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Dalamud.Utility;
 using Flurl.Http;
@@ -7,7 +9,9 @@ namespace Dnc.Delivery;
 
 public static class DncDelivery
 {
-    public static void Deliver(string title, string text = "")
+    private const string CompositionFileName = "party.png";
+
+    public static void Deliver(string title, string text = "", byte[]? compositionPng = null)
     {
         if (Plugin.Configuration.DcHook.IsNullOrWhitespace())
         {
@@ -21,31 +25,24 @@ public static class DncDelivery
             return;
         }
 
-        Task.Run(() => DeliverAsync(title, text));
+        Task.Run(() => DeliverAsync(title, text, compositionPng));
     }
 
-    private static async Task DeliverAsync(string title, string text)
+    private static async Task DeliverAsync(string title, string text, byte[]? compositionPng)
     {
         var discordWebhookUrl = Plugin.Configuration.DcHook;
 
-        var payload = new
-        {
-            username = "DcN",
-            avatar_url = "https://i.imgur.com/wAhXLxp.png",
-            embeds = new[]
-            {
-                new
-                {
-                    title = title,
-                    description = text,
-                    color = 16711680
-                }
-            }
-        };
-
         try
         {
-            await discordWebhookUrl.PostJsonAsync(payload);
+            if (compositionPng is { Length: > 0 })
+            {
+                await DeliverWithAttachmentAsync(discordWebhookUrl, title, text, compositionPng);
+            }
+            else
+            {
+                await DeliverJsonAsync(discordWebhookUrl, title, text, null);
+            }
+
             Service.PluginLog.Debug("Sent Discord notification.");
         }
         catch (FlurlHttpException e)
@@ -60,5 +57,36 @@ public static class DncDelivery
                 Service.PluginLog.Error($"Failed to send notification to Discord webhook: '{e.Message}'");
             }
         }
+    }
+
+    private static Task DeliverWithAttachmentAsync(string webhookUrl, string title, string text, byte[] compositionPng)
+    {
+        var payload = BuildPayload(title, text, $"attachment://{CompositionFileName}");
+        var payloadJson = JsonSerializer.Serialize(payload);
+
+        return webhookUrl.PostMultipartAsync(mp => mp
+            .AddString("payload_json", payloadJson)
+            .AddFile("files[0]", new MemoryStream(compositionPng), CompositionFileName, "image/png"));
+    }
+
+    private static Task DeliverJsonAsync(string webhookUrl, string title, string text, string? imageUrl)
+        => webhookUrl.PostJsonAsync(BuildPayload(title, text, imageUrl));
+
+    private static object BuildPayload(string title, string text, string? imageUrl)
+    {
+        var embed = new
+        {
+            title,
+            description = text,
+            color = 16711680,
+            image = imageUrl == null ? null : new { url = imageUrl },
+        };
+
+        return new
+        {
+            username = "DcN",
+            avatar_url = "https://i.imgur.com/wAhXLxp.png",
+            embeds = new[] { embed },
+        };
     }
 }

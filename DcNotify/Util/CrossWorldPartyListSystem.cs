@@ -13,6 +13,8 @@ public static class CrossWorldPartyListSystem
         public int PartyCount;
         public uint Level;
         public uint JobId;
+        public ulong ContentId;
+        public byte MemberIndex;
     }
 
     public delegate void CrossWorldJoinDelegate(CrossWorldMember m);
@@ -41,10 +43,19 @@ public static class CrossWorldPartyListSystem
         members.Clear();
         oldMembers.Clear();
         hasBaseline = false;
+        PfRoleTracker.Clear();
+    }
+
+    private static bool MembersEqual(CrossWorldMember a, CrossWorldMember b)
+    {
+        if (a.ContentId != 0 && b.ContentId != 0)
+            return a.ContentId == b.ContentId;
+
+        return a.Name == b.Name;
     }
 
     private static bool ListContainsMember(List<CrossWorldMember> l, CrossWorldMember m)
-        => l.Any(a => a.Name == m.Name);
+        => l.Any(a => MembersEqual(a, m));
 
     private static unsafe void Update(IFramework framework)
     {
@@ -71,6 +82,8 @@ public static class CrossWorldPartyListSystem
                 PartyCount = partyCount,
                 Level = addr->Level,
                 JobId = addr->ClassJobId,
+                ContentId = addr->ContentId,
+                MemberIndex = addr->MemberIndex,
             };
             members.Add(mObj);
         }
@@ -82,16 +95,23 @@ public static class CrossWorldPartyListSystem
             return;
         }
 
-        foreach (var i in members)
+        foreach (var member in members)
         {
-            if (!ListContainsMember(oldMembers, i))
-                OnJoin?.Invoke(i);
+            if (!ListContainsMember(oldMembers, member))
+            {
+                var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
+                PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
+                OnJoin?.Invoke(member);
+            }
         }
 
-        foreach (var i in oldMembers)
+        foreach (var member in oldMembers)
         {
-            if (!ListContainsMember(members, i))
-                OnLeave?.Invoke(i);
+            if (!ListContainsMember(members, member))
+            {
+                OnLeave?.Invoke(member);
+                PfRoleTracker.Remove(member.ContentId, member.Name);
+            }
         }
 
         oldMembers = members.ToList();

@@ -57,6 +57,55 @@ public static class ClassJobRegistry
         return rowToGroup.TryGetValue(classJobRowId, out var group) ? group : null;
     }
 
+    public static uint GetClassJobIconId(uint rowId)
+        => rowId is >= 1 and <= 42 ? 62000u + rowId : 0u;
+
+    public static PfRoleGroup? GetRoleFromSlotFlags(ulong slotFlags)
+    {
+        if (slotFlags == 0)
+            return null;
+
+        PfRoleGroup? matched = null;
+        var groupsFound = new HashSet<PfRoleGroup>();
+        var jobBits = 0;
+
+        for (uint jobId = 1; jobId <= 42; jobId++)
+        {
+            if ((slotFlags & (1ul << (int)jobId)) == 0)
+                continue;
+
+            jobBits++;
+            var group = GetRoleGroup(jobId);
+            if (group == null)
+                continue;
+
+            groupsFound.Add(group.Value);
+            matched = group;
+        }
+
+        if (groupsFound.Count == 0)
+            return null;
+
+        if (groupsFound.Count > 1 || jobBits >= 20)
+            return PfRoleGroup.Free;
+
+        return matched;
+    }
+
+    public static uint GetRolePlaceholderIconId(PfRoleGroup? role)
+    {
+        return role switch
+        {
+            PfRoleGroup.Tank => GetClassJobIconId(19),
+            PfRoleGroup.Healer => GetClassJobIconId(24),
+            PfRoleGroup.MeleeDps => GetClassJobIconId(20),
+            PfRoleGroup.PhysicalRangedDps => GetClassJobIconId(23),
+            PfRoleGroup.MagicalRangedDps => GetClassJobIconId(25),
+            PfRoleGroup.Free => 62001u,
+            _ => 62001u,
+        };
+    }
+
     public static void Initialize()
     {
         rowToGroup = null;
@@ -111,7 +160,4 @@ public static class ClassJobRegistry
 
     private static ClassJobEntry ToEntry(ClassJob classJob)
         => new(classJob.RowId, classJob.Abbreviation.ToString(), GetClassJobIconId(classJob.RowId));
-
-    private static uint GetClassJobIconId(uint rowId)
-        => rowId is >= 1 and <= 42 ? 62000u + rowId : 0u;
 }

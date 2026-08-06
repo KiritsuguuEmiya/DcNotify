@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Dnc.Delivery;
 using Dnc.Util;
 
@@ -27,18 +29,9 @@ public static class PartyListener
         if (m.PartyCount != 8 && !Plugin.Configuration.ShouldNotifyForClassJob(m.JobId))
             return;
 
-        var jobAbbr = LuminaDataUtil.GetJobAbbreviation(m.JobId);
-
-        if (m.PartyCount == 8)
-        {
-            DncDelivery.Deliver("Party full",
-                $"{m.Name} (Lv{m.Level} {jobAbbr}) joins the party.\nParty recruitment ended. All spots have been filled.");
-        }
-        else
-        {
-            DncDelivery.Deliver($"{m.PartyCount}/8: Party join",
-                $"{m.Name} (Lv{m.Level} {jobAbbr}) joins the party.");
-        }
+        SendNotification(
+            m.PartyCount == 8 ? "Party full" : $"{m.PartyCount}/8: Party join",
+            FormatJoinDescription(m));
     }
 
     private static void OnLeave(CrossWorldPartyListSystem.CrossWorldMember m)
@@ -46,9 +39,55 @@ public static class PartyListener
         if (!CharacterUtil.IsClientAfk()) return;
         if (!Plugin.Configuration.Enabled) return;
 
-        var jobAbbr = LuminaDataUtil.GetJobAbbreviation(m.JobId);
+        var remaining = Math.Max(0, m.PartyCount - 1);
+        SendNotification(
+            $"{remaining}/8: Party leave",
+            FormatLeaveDescription(m, remaining));
+    }
 
-        DncDelivery.Deliver($"{m.PartyCount - 1}/8: Party leave",
-            $"{m.Name} (Lv{m.Level} {jobAbbr}) has left the party.");
+    private static void SendNotification(string title, string description)
+    {
+        _ = SendNotificationAsync(title, description);
+    }
+
+    private static async Task SendNotificationAsync(string title, string description)
+    {
+        byte[]? composition = null;
+
+        try
+        {
+            var slots = PartyCompositionBuilder.Build();
+            composition = await PartyCompositionRenderer.RenderAsync(slots);
+        }
+        catch (Exception ex)
+        {
+            Service.PluginLog.Warning(ex, "Failed to build party composition for webhook.");
+        }
+
+        DncDelivery.Deliver(title, description, composition);
+    }
+
+    private static string FormatJoinDescription(CrossWorldPartyListSystem.CrossWorldMember m)
+    {
+        var status = FormatStatusLine(m.PartyCount);
+        var action = m.PartyCount == 8
+            ? $"{FormatMemberLine(m)} joins the party.\n\nParty recruitment ended."
+            : $"{FormatMemberLine(m)} joins the party.";
+
+        return $"{action}\n\n{status}";
+    }
+
+    private static string FormatLeaveDescription(CrossWorldPartyListSystem.CrossWorldMember m, int remaining)
+    {
+        return $"{FormatMemberLine(m)} has left the party.\n\n{FormatStatusLine(remaining)}";
+    }
+
+    private static string FormatMemberLine(CrossWorldPartyListSystem.CrossWorldMember m)
+        => $"**{m.Name}** (Lv{m.Level})";
+
+    private static string FormatStatusLine(int filledCount)
+    {
+        var remaining = Math.Max(0, 8 - filledCount);
+        return $"**{filledCount}/8 filled · {remaining} players remaining**";
     }
 }
