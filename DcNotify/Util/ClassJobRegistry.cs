@@ -51,8 +51,16 @@ public static class ClassJobRegistry
 
     private static IReadOnlyList<PfRoleRow>? rows;
     private static Dictionary<uint, PfRoleGroup>? rowToGroup;
+    private static Dictionary<uint, string>? rowToAbbreviation;
+    private static Dictionary<PfRoleGroup, string>? roleLabels;
 
     public static IReadOnlyList<PfRoleRow> Rows => rows ??= BuildRows();
+
+    public static string GetAbbreviation(uint rowId)
+    {
+        rowToAbbreviation ??= BuildAbbreviationMap();
+        return rowToAbbreviation.TryGetValue(rowId, out var abbreviation) ? abbreviation : "???";
+    }
 
     public static PfRoleGroup? GetRoleGroup(uint classJobRowId)
     {
@@ -64,16 +72,10 @@ public static class ClassJobRegistry
         => rowId is >= 1 and <= 42 ? 62000u + rowId : 0u;
 
     public static string GetRoleLabel(PfRoleGroup role)
-        => role switch
-        {
-            PfRoleGroup.Tank => "Tank",
-            PfRoleGroup.Healer => "Healer",
-            PfRoleGroup.MeleeDps => "Melee DPS",
-            PfRoleGroup.PhysicalRangedDps => "Physical Ranged DPS",
-            PfRoleGroup.MagicalRangedDps => "Magical Ranged DPS",
-            PfRoleGroup.Free => "Free",
-            _ => "Unknown",
-        };
+    {
+        roleLabels ??= BuildRoleLabelMap();
+        return roleLabels.TryGetValue(role, out var label) ? label : "Unknown";
+    }
 
     public static PfRoleGroup? GetRoleFromSlotFlags(ulong slotFlags)
     {
@@ -133,6 +135,8 @@ public static class ClassJobRegistry
     public static void Initialize()
     {
         rowToGroup = null;
+        rowToAbbreviation = null;
+        roleLabels = null;
         rows = BuildRows();
     }
 
@@ -162,6 +166,25 @@ public static class ClassJobRegistry
                 map[jobId] = layout.Group;
         }
 
+        return map;
+    }
+
+    private static Dictionary<uint, string> BuildAbbreviationMap()
+    {
+        var map = new Dictionary<uint, string>();
+        foreach (var row in Rows)
+        {
+            foreach (var job in row.Jobs)
+                map[job.RowId] = job.Abbreviation;
+        }
+
+        return map;
+    }
+
+    private static Dictionary<PfRoleGroup, string> BuildRoleLabelMap()
+    {
+        var map = PfLayout.ToDictionary(layout => layout.Group, layout => layout.Label);
+        map[PfRoleGroup.Free] = "Free";
         return map;
     }
 

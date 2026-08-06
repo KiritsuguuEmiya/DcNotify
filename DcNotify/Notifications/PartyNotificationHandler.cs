@@ -7,7 +7,7 @@ namespace Dnc.Notifications;
 
 public sealed class PartyNotificationHandler
 {
-    public static PartyNotificationHandler Default { get; } = new(DiscordNotificationSink.Instance);
+    public static PartyNotificationHandler Default { get; private set; } = null!;
 
     private readonly INotificationSink sink;
     private readonly Func<uint, string>? jobAbbreviationResolver;
@@ -19,6 +19,9 @@ public sealed class PartyNotificationHandler
         this.sink = sink;
         this.jobAbbreviationResolver = jobAbbreviationResolver;
     }
+
+    public static void Initialize(INotificationSink sink)
+        => Default = new PartyNotificationHandler(sink);
 
     public void HandleJoin(
         CrossWorldPartyListSystem.CrossWorldMember member,
@@ -61,8 +64,30 @@ public sealed class PartyNotificationHandler
         DeliverAsync(title, description, includeComposition);
     }
 
+    public async Task SendTestNotificationAsync()
+    {
+        var slots = PartyCompositionBuilder.BuildRandomSample();
+        var filled = PartyCompositionBuilder.CountFilled(slots);
+        var remaining = Math.Max(0, PartyConstants.SlotCount - filled);
+
+        byte[]? composition = null;
+        try
+        {
+            composition = await PartyCompositionRenderer.RenderAsync(slots);
+        }
+        catch (Exception ex)
+        {
+            Service.PluginLog.Warning(ex, "Failed to render test party composition.");
+        }
+
+        sink.Deliver(
+            "Test notification",
+            $"**Preview Player** (Lv100) joins the party.\n\n**{filled}/{PartyConstants.SlotCount} filled · {remaining} players remaining**",
+            composition);
+    }
+
     private string ResolveJobAbbreviation(uint jobId)
-        => jobAbbreviationResolver?.Invoke(jobId) ?? LuminaDataUtil.GetJobAbbreviation(jobId);
+        => jobAbbreviationResolver?.Invoke(jobId) ?? ClassJobRegistry.GetAbbreviation(jobId);
 
     private void DeliverAsync(string title, string description, bool includeComposition)
     {

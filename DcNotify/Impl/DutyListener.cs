@@ -4,7 +4,7 @@ using Lumina.Excel.Sheets;
 
 namespace Dnc.Impl;
 
-public class DutyListener
+public static class DutyListener
 {
     public static void On()
     {

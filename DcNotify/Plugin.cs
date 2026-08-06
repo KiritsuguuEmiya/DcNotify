@@ -2,7 +2,9 @@ using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dnc.Delivery;
 using Dnc.Impl;
+using Dnc.Notifications;
 using Dnc.Util;
 using Dnc.Windows;
 
@@ -37,6 +39,11 @@ public sealed class Plugin : IDalamudPlugin
         Configuration.Initialize(PluginInterface);
 
         ClassJobRegistry.Initialize();
+
+        var notificationSink = new DiscordNotificationSink(Configuration, Service.PluginLog);
+        PartyNotificationHandler.Initialize(notificationSink);
+        DutyNotificationHandler.Initialize(notificationSink);
+        PartyChatNotificationHandler.Initialize(notificationSink);
 
         ConfigWindow = new ConfigWindow(this);
 

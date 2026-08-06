@@ -6,7 +6,7 @@ namespace Dnc.Notifications;
 
 public sealed class DutyNotificationHandler
 {
-    public static DutyNotificationHandler Default { get; } = new(DiscordNotificationSink.Instance);
+    public static DutyNotificationHandler Default { get; private set; } = null!;
 
     private readonly INotificationSink sink;
 
@@ -14,6 +14,9 @@ public sealed class DutyNotificationHandler
     {
         this.sink = sink;
     }
+
+    public static void Initialize(INotificationSink sink)
+        => Default = new DutyNotificationHandler(sink);
 
     public void Handle(ContentFinderCondition duty, Configuration config, bool isClientAfk)
     {

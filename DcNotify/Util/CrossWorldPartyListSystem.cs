@@ -86,6 +86,7 @@ public static class CrossWorldPartyListSystem
             {
                 var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
                 PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
+                RecordPfMemberSlot(member.ContentId, member.MemberIndex);
             }
 
             oldMembers = members.ToList();
@@ -97,6 +98,7 @@ public static class CrossWorldPartyListSystem
         {
             var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
             PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
+            RecordPfMemberSlot(member.ContentId, member.MemberIndex);
             OnJoin?.Invoke(member);
         }
 
@@ -107,5 +109,12 @@ public static class CrossWorldPartyListSystem
         }
 
         oldMembers = members.ToList();
+    }
+
+    private static void RecordPfMemberSlot(ulong contentId, byte memberIndex)
+    {
+        var slotIndex = PfRoleResolver.FindSlotIndex(contentId, memberIndex);
+        if (slotIndex >= 0)
+            PfRecruitmentSnapshot.RecordMember(slotIndex, contentId);
     }
 }

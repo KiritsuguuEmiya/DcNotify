@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
@@ -15,8 +16,6 @@ public readonly record struct PartySlot(PartySlotKind Kind, PfRoleGroup? Role, u
 
 public static class PartyCompositionBuilder
 {
-    private const int PartySlotCount = 8;
-
     private static readonly PfRoleGroup[] SampleLayout =
     [
         PfRoleGroup.Tank,
@@ -34,14 +33,14 @@ public static class PartyCompositionBuilder
 
     public static PartySlot[] BuildRandomSample()
     {
-        var slots = new PartySlot[PartySlotCount];
-        var filledCount = Random.Shared.Next(1, PartySlotCount + 1);
-        var filledIndices = Enumerable.Range(0, PartySlotCount)
+        var slots = new PartySlot[PartyConstants.SlotCount];
+        var filledCount = Random.Shared.Next(1, PartyConstants.SlotCount + 1);
+        var filledIndices = Enumerable.Range(0, PartyConstants.SlotCount)
             .OrderBy(_ => Random.Shared.Next())
             .Take(filledCount)
             .ToHashSet();
 
-        for (var i = 0; i < PartySlotCount; i++)
+        for (var i = 0; i < PartyConstants.SlotCount; i++)
         {
             var role = SampleLayout[i];
             if (filledIndices.Contains(i))
@@ -65,9 +64,10 @@ public static class PartyCompositionBuilder
 
     private static PartySlot[] BuildFromPf()
     {
-        var slots = new PartySlot[PartySlotCount];
+        var slots = new PartySlot[PartyConstants.SlotCount];
+        var partyMembersBySlot = BuildPartyMembersBySlot();
 
-        for (var i = 0; i < PartySlotCount; i++)
+        for (var i = 0; i < PartyConstants.SlotCount; i++)
         {
             var slotFlags = PfRecruitmentSnapshot.GetSlotFlags(i);
             if (slotFlags == 0)
@@ -77,11 +77,22 @@ public static class PartyCompositionBuilder
             }
 
             var role = ClassJobRegistry.GetRoleFromSlotFlags(slotFlags);
-            var contentId = PfRoleResolver.GetMemberContentId(i);
+            var contentId = PfRecruitmentSnapshot.GetMemberContentId(i);
+            var jobId = 0u;
+
+            if (contentId == 0 && partyMembersBySlot.TryGetValue(i, out var member))
+            {
+                contentId = member.ContentId;
+                jobId = member.JobId;
+            }
+            else if (partyMembersBySlot.TryGetValue(i, out member))
+            {
+                jobId = member.JobId;
+            }
 
             if (contentId != 0)
             {
-                var iconId = ResolveMemberIconId(contentId);
+                var iconId = ResolveMemberIconId(contentId, jobId);
                 slots[i] = new PartySlot(PartySlotKind.Filled, role, iconId);
             }
             else
@@ -96,12 +107,34 @@ public static class PartyCompositionBuilder
         return slots;
     }
 
-    private static unsafe PartySlot[] BuildFromPartyList()
+    private static unsafe Dictionary<int, (ulong ContentId, uint JobId)> BuildPartyMembersBySlot()
     {
-        var slots = new PartySlot[PartySlotCount];
+        var map = new Dictionary<int, (ulong ContentId, uint JobId)>();
         var partyCount = InfoProxyCrossRealm.GetPartyMemberCount();
 
-        for (var i = 0; i < PartySlotCount; i++)
+        for (var i = 0u; i < partyCount; i++)
+        {
+            var member = InfoProxyCrossRealm.GetGroupMember(i);
+            if (member == null)
+                continue;
+
+            var contentId = member->ContentId;
+            var slotIndex = PfRoleResolver.FindSlotIndex(contentId, member->MemberIndex);
+            if (slotIndex < 0 || slotIndex >= PartyConstants.SlotCount)
+                continue;
+
+            map[slotIndex] = (contentId, member->ClassJobId);
+        }
+
+        return map;
+    }
+
+    private static unsafe PartySlot[] BuildFromPartyList()
+    {
+        var slots = new PartySlot[PartyConstants.SlotCount];
+        var partyCount = InfoProxyCrossRealm.GetPartyMemberCount();
+
+        for (var i = 0; i < PartyConstants.SlotCount; i++)
         {
             if (i >= partyCount)
             {

@@ -4,7 +4,7 @@ namespace Dnc.Notifications;
 
 public sealed class PartyChatNotificationHandler
 {
-    public static PartyChatNotificationHandler Default { get; } = new(DiscordNotificationSink.Instance);
+    public static PartyChatNotificationHandler Default { get; private set; } = null!;
 
     private readonly INotificationSink sink;
 
@@ -12,6 +12,9 @@ public sealed class PartyChatNotificationHandler
     {
         this.sink = sink;
     }
+
+    public static void Initialize(INotificationSink sink)
+        => Default = new PartyChatNotificationHandler(sink);
 
     public void Handle(string senderName, string message, Configuration config, bool isClientAfk, string? localPlayerName)
     {

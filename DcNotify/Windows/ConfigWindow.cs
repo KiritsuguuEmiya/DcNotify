@@ -5,7 +5,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using Dnc.Delivery;
+using Dnc.Notifications;
 using Dnc.Util;
 
 namespace Dnc.Windows;
@@ -40,16 +40,16 @@ public class ConfigWindow : Window, IDisposable
                     DrawApplicationTab();
             }
 
-            using (var apiTab = ImRaii.TabItem("API"))
-            {
-                if (apiTab)
-                    DrawApiTab();
-            }
-
             using (var classFilterTab = ImRaii.TabItem("Class Filter"))
             {
                 if (classFilterTab)
                     DrawClassFilterTab();
+            }
+
+            using (var apiTab = ImRaii.TabItem("API"))
+            {
+                if (apiTab)
+                    DrawApiTab();
             }
         }
 
@@ -176,27 +176,8 @@ public class ConfigWindow : Window, IDisposable
             "Set the channel notification preference to Only @mentions for mobile push.");
     }
 
-    private static async Task SendTestNotificationAsync()
-    {
-        var slots = PartyCompositionBuilder.BuildRandomSample();
-        var filled = PartyCompositionBuilder.CountFilled(slots);
-        var remaining = Math.Max(0, 8 - filled);
-
-        byte[]? composition = null;
-        try
-        {
-            composition = await PartyCompositionRenderer.RenderAsync(slots);
-        }
-        catch (Exception ex)
-        {
-            Service.PluginLog.Warning(ex, "Failed to render test party composition.");
-        }
-
-        DncDelivery.Deliver(
-            "Test notification",
-            $"**Preview Player** (Lv100) joins the party.\n\n**{filled}/8 filled · {remaining} players remaining**",
-            composition);
-    }
+    private static Task SendTestNotificationAsync()
+        => PartyNotificationHandler.Default.SendTestNotificationAsync();
 
     private void DrawClassFilterTab()
     {
