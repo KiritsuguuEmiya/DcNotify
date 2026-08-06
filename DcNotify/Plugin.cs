@@ -46,6 +46,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
+        PluginInterface.UiBuilder.OpenMainUi += DrawMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
         CrossWorldPartyListSystem.Start();
@@ -93,8 +94,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.Draw();
     }
 
-    public void DrawConfigUI()
-    {
-        ConfigWindow.IsOpen = true;
-    }
+    public void DrawMainUI() => ConfigWindow.IsOpen = true;
+
+    public void DrawConfigUI() => ConfigWindow.IsOpen = true;
 }
