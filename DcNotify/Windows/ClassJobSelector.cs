@@ -14,27 +14,30 @@ public static class ClassJobSelector
 
     public static void Draw(Configuration configuration)
     {
-        if (configuration.SelectedClassJobIds.Count == 0)
-            ImGui.TextDisabled("Notify all classes (none selected). Select classes to filter join notifications.");
+        var notifyAll = configuration.SelectedClassJobIds.Count == 0;
+
+        if (notifyAll)
+            ImGui.TextDisabled("ALL jobs selected — join notifications are not filtered.");
         else
-            ImGui.Text($"Filtering {configuration.SelectedClassJobIds.Count} class(es). Party full (8/8) always notifies.");
+            ImGui.Text($"Filtering {configuration.SelectedClassJobIds.Count} job(s). Party full (8/8) always notifies.");
 
         ImGui.Spacing();
+        DrawAllOption(configuration, notifyAll);
+        ImGui.Spacing();
 
-        using (var table = ImRaii.Table("ClassJobSelectorTable", 3,
+        using (var table = ImRaii.Table("ClassJobSelectorTable", 2,
                    ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingFixedFit))
         {
             if (!table)
                 return;
 
             ImGui.TableSetupColumn("Role", ImGuiTableColumnFlags.WidthFixed, RoleColumnWidth);
-            ImGui.TableSetupColumn("JOB", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("CLASS", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("Jobs", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableHeadersRow();
 
             foreach (var row in ClassJobRegistry.Rows)
             {
-                if (row.Jobs.Count == 0 && row.Classes.Count == 0)
+                if (row.Jobs.Count == 0)
                     continue;
 
                 ImGui.TableNextRow();
@@ -43,45 +46,70 @@ public static class ClassJobSelector
                 DrawRoleHeader(configuration, row);
 
                 ImGui.TableNextColumn();
-                DrawClassJobIcons(configuration, row.Jobs);
-
-                ImGui.TableNextColumn();
-                DrawClassJobIcons(configuration, row.Classes);
+                DrawClassJobIcons(configuration, row);
             }
         }
+    }
 
-        ImGui.Spacing();
+    private static void DrawAllOption(Configuration configuration, bool notifyAll)
+    {
+        var size = new Vector2(RoleColumnWidth - 8f, IconSize);
+        var pos = ImGui.GetCursorScreenPos();
+        var drawList = ImGui.GetWindowDrawList();
+        var bg = notifyAll ? new Vector4(0.35f, 0.35f, 0.35f, 1f) : new Vector4(0.22f, 0.22f, 0.22f, 1f);
+        drawList.AddRectFilled(pos, pos + size, ToColorU32(bg), 4f);
 
-        if (ImGui.Button("Clear selection"))
+        ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new Vector4(1f, 1f, 1f, 0.12f));
+        ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Vector4(1f, 1f, 1f, 0.2f));
+        ImGui.PushStyleColor(ImGuiCol.Text, notifyAll ? Vector4.One : new Vector4(0.7f, 0.7f, 0.7f, 1f));
+        if (ImGui.Selectable("ALL", notifyAll, ImGuiSelectableFlags.None, size))
             configuration.ClearClassJobSelection();
+
+        ImGui.PopStyleColor(4);
     }
 
     private static void DrawRoleHeader(Configuration configuration, PfRoleRow row)
     {
         var allSelected = configuration.IsRoleGroupFullySelected(row.AllIds);
         var label = allSelected ? $"{row.Label} *" : row.Label;
+        var size = new Vector2(RoleColumnWidth - 8f, IconSize);
+        var pos = ImGui.GetCursorScreenPos();
 
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(pos, pos + size, ToColorU32(row.BackgroundColor), 4f);
+
+        ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new Vector4(1f, 1f, 1f, 0.12f));
+        ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Vector4(1f, 1f, 1f, 0.2f));
         ImGui.PushStyleColor(ImGuiCol.Text, row.LabelColor);
-        if (ImGui.Selectable(label, allSelected, ImGuiSelectableFlags.None, new Vector2(RoleColumnWidth - 8f, IconSize)))
+        if (ImGui.Selectable(label, allSelected, ImGuiSelectableFlags.None, size))
             configuration.SetRoleGroup(row.AllIds, !allSelected);
 
-        ImGui.PopStyleColor();
+        ImGui.PopStyleColor(4);
     }
 
-    private static void DrawClassJobIcons(Configuration configuration, IReadOnlyList<ClassJobEntry> entries)
+    private static void DrawClassJobIcons(Configuration configuration, PfRoleRow row)
     {
-        foreach (var entry in entries)
+        foreach (var entry in row.Jobs)
         {
-            DrawClassJobIcon(configuration, entry);
+            DrawClassJobIcon(configuration, row, entry);
             ImGui.SameLine(0f, 4f);
         }
     }
 
-    private static void DrawClassJobIcon(Configuration configuration, ClassJobEntry entry)
+    private static void DrawClassJobIcon(Configuration configuration, PfRoleRow row, ClassJobEntry entry)
     {
+        var slotMin = ImGui.GetCursorScreenPos();
+        var slotSize = new Vector2(IconSize, IconSize);
+        var slotMax = slotMin + slotSize;
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(slotMin, slotMax, ToColorU32(row.BackgroundColor), 4f);
+
         if (entry.IconId == 0)
         {
-            if (ImGui.Button($"{entry.Abbreviation}##missing-{entry.RowId}", new Vector2(IconSize, IconSize)))
+            ImGui.SetCursorScreenPos(slotMin);
+            if (ImGui.Button($"{entry.Abbreviation}##missing-{entry.RowId}", slotSize))
                 configuration.ToggleClassJob(entry.RowId);
 
             return;
@@ -90,7 +118,8 @@ public static class ClassJobSelector
         var texture = Service.TextureProvider.GetFromGameIcon(new GameIconLookup(entry.IconId));
         if (!texture.TryGetWrap(out var wrap, out _))
         {
-            if (ImGui.Button($"{entry.Abbreviation}##loading-{entry.RowId}", new Vector2(IconSize, IconSize)))
+            ImGui.SetCursorScreenPos(slotMin);
+            if (ImGui.Button($"{entry.Abbreviation}##loading-{entry.RowId}", slotSize))
                 configuration.ToggleClassJob(entry.RowId);
 
             return;
@@ -99,11 +128,12 @@ public static class ClassJobSelector
         var isFiltering = configuration.SelectedClassJobIds.Count > 0;
         var isSelected = configuration.IsClassJobSelected(entry.RowId);
         var tint = isFiltering
-            ? (isSelected ? Vector4.One : new Vector4(0.45f, 0.45f, 0.45f, 0.65f))
-            : new Vector4(0.85f, 0.85f, 0.85f, 1.0f);
+            ? (isSelected ? Vector4.One : new Vector4(0.55f, 0.55f, 0.55f, 0.75f))
+            : Vector4.One;
 
         ImGui.PushID((int)entry.RowId);
-        ImGui.Image(wrap.Handle, new Vector2(IconSize, IconSize), Vector2.Zero, Vector2.One, tint);
+        ImGui.SetCursorScreenPos(slotMin);
+        ImGui.Image(wrap.Handle, slotSize, Vector2.Zero, Vector2.One, tint);
 
         if (ImGui.IsItemHovered())
         {
@@ -112,18 +142,18 @@ public static class ClassJobSelector
             ImGui.EndTooltip();
         }
 
-        ImGui.SetCursorScreenPos(ImGui.GetItemRectMin());
-        if (ImGui.InvisibleButton("##classjob-btn", new Vector2(IconSize, IconSize)))
+        ImGui.SetCursorScreenPos(slotMin);
+        if (ImGui.InvisibleButton("##classjob-btn", slotSize))
             configuration.ToggleClassJob(entry.RowId);
 
         if (isFiltering && isSelected)
         {
-            var min = ImGui.GetItemRectMin();
-            var max = ImGui.GetItemRectMax();
-            var drawList = ImGui.GetWindowDrawList();
-            drawList.AddRect(min, max, ImGui.ColorConvertFloat4ToU32(new Vector4(0.95f, 0.78f, 0.25f, 1.0f)), 0f, ImDrawFlags.None, 2f);
+            drawList.AddRect(slotMin, slotMax, ToColorU32(new Vector4(0.95f, 0.78f, 0.25f, 1f)), 4f, ImDrawFlags.None, 2f);
         }
 
         ImGui.PopID();
     }
+
+    private static uint ToColorU32(Vector4 color)
+        => ImGui.ColorConvertFloat4ToU32(color);
 }

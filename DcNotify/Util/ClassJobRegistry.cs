@@ -22,28 +22,30 @@ public sealed class PfRoleRow
     public PfRoleGroup Group { get; init; }
     public string Label { get; init; } = string.Empty;
     public Vector4 LabelColor { get; init; }
+    public Vector4 BackgroundColor { get; init; }
     public IReadOnlyList<ClassJobEntry> Jobs { get; init; } = [];
-    public IReadOnlyList<ClassJobEntry> Classes { get; init; } = [];
 
-    public IEnumerable<uint> AllIds => Jobs.Select(j => j.RowId).Concat(Classes.Select(c => c.RowId));
+    public IEnumerable<uint> AllIds => Jobs.Select(j => j.RowId);
 }
 
 public static class ClassJobRegistry
 {
-    private static readonly Vector4 TankColor = new(0.45f, 0.65f, 1.0f, 1.0f);
-    private static readonly Vector4 HealerColor = new(0.45f, 0.95f, 0.55f, 1.0f);
-    private static readonly Vector4 DpsColor = new(0.95f, 0.45f, 0.45f, 1.0f);
-    private static readonly Vector4 FreeColor = new(0.75f, 0.75f, 0.75f, 1.0f);
+    private static readonly Vector4 TankLabelColor = new(0.85f, 0.92f, 1.0f, 1.0f);
+    private static readonly Vector4 HealerLabelColor = new(0.85f, 1.0f, 0.88f, 1.0f);
+    private static readonly Vector4 DpsLabelColor = new(1.0f, 0.85f, 0.85f, 1.0f);
 
-    // Party Finder layout: ordered row IDs per role, matching in-game JOB / CLASS columns.
-    private static readonly (PfRoleGroup Group, string Label, Vector4 Color, uint[] Jobs, uint[] Classes)[] PfLayout =
+    // FFXIV PF role slot colors: tank blue, healer green, DPS red.
+    private static readonly Vector4 TankBgColor = new(0.20f, 0.40f, 0.72f, 1.0f);
+    private static readonly Vector4 HealerBgColor = new(0.18f, 0.55f, 0.28f, 1.0f);
+    private static readonly Vector4 DpsBgColor = new(0.65f, 0.18f, 0.18f, 1.0f);
+
+    private static readonly (PfRoleGroup Group, string Label, Vector4 LabelColor, Vector4 BgColor, uint[] Jobs)[] PfLayout =
     [
-        (PfRoleGroup.Tank, "Tank", TankColor, [19, 21, 32, 37], [1, 3]),
-        (PfRoleGroup.Healer, "Healer", HealerColor, [24, 28, 33, 40], [6]),
-        (PfRoleGroup.MeleeDps, "Melee DPS", DpsColor, [20, 22, 30, 34, 39, 41], [2, 4, 29]),
-        (PfRoleGroup.PhysicalRangedDps, "Physical Ranged DPS", DpsColor, [23, 31, 38], [5]),
-        (PfRoleGroup.MagicalRangedDps, "Magical Ranged DPS", DpsColor, [25, 27, 35, 42], [7, 26]),
-        (PfRoleGroup.Free, "Free", FreeColor, [0], []),
+        (PfRoleGroup.Tank, "Tank", TankLabelColor, TankBgColor, [19, 21, 32, 37]),
+        (PfRoleGroup.Healer, "Healer", HealerLabelColor, HealerBgColor, [24, 28, 33, 40]),
+        (PfRoleGroup.MeleeDps, "Melee DPS", DpsLabelColor, DpsBgColor, [20, 22, 30, 34, 39, 41]),
+        (PfRoleGroup.PhysicalRangedDps, "Physical Ranged DPS", DpsLabelColor, DpsBgColor, [23, 31, 38]),
+        (PfRoleGroup.MagicalRangedDps, "Magical Ranged DPS", DpsLabelColor, DpsBgColor, [25, 27, 35, 42]),
     ];
 
     private static IReadOnlyList<PfRoleRow>? rows;
@@ -122,9 +124,9 @@ public static class ClassJobRegistry
             {
                 Group = layout.Group,
                 Label = layout.Label,
-                LabelColor = layout.Color,
+                LabelColor = layout.LabelColor,
+                BackgroundColor = layout.BgColor,
                 Jobs = ResolveEntries(layout.Jobs, byId),
-                Classes = ResolveEntries(layout.Classes, byId),
             })
             .ToList();
     }
