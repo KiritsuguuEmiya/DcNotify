@@ -18,10 +18,10 @@
     "IsHide": false,
     "IsTestingExclusive": false,
     "SupportsProfiles": true,
-    "DownloadLinkInstall": "https://github.com/KiritsuguuEmiya/DcNotify/releases/latest/download/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/KiritsuguuEmiya/DcNotify/releases/latest/download/latest.zip",
-    "DownloadLinkTesting": "https://github.com/KiritsuguuEmiya/DcNotify/releases/latest/download/latest.zip",
-    "LastUpdate": 1786047294,
+    "DownloadLinkInstall": "https://raw.githubusercontent.com/KiritsuguuEmiya/DcNotify/master/releases/v1.3.0/latest.zip",
+    "DownloadLinkUpdate": "https://raw.githubusercontent.com/KiritsuguuEmiya/DcNotify/master/releases/v1.3.0/latest.zip",
+    "DownloadLinkTesting": "https://raw.githubusercontent.com/KiritsuguuEmiya/DcNotify/master/releases/v1.3.0/latest.zip",
+    "LastUpdate": 1786047567,
     "DownloadCount": 0,
     "IconUrl": "https://raw.githubusercontent.com/KiritsuguuEmiya/DcNotify/master/Images/icon.png"
   }
