@@ -33,4 +33,9 @@
     <PackageReference Include="Flurl.Http" Version="3.2.4" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DcNotify.UnitTests" />
+    <InternalsVisibleTo Include="DcNotify.IntegrationTests" />
+  </ItemGroup>
 </Project>

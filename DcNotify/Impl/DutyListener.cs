@@ -1,5 +1,4 @@
-using Dalamud.Utility;
-using Dnc.Delivery;
+using Dnc.Notifications;
 using Dnc.Util;
 using Lumina.Excel.Sheets;
 
@@ -19,17 +18,9 @@ public class DutyListener
         Service.ClientState.CfPop -= OnDutyPop;
     }
 
-    private static void OnDutyPop(ContentFinderCondition e)
-    {
-        if (!Plugin.Configuration.EnableForDutyPops)
-            return;
-
-        if (!CharacterUtil.IsClientAfk())
-            return;
-
-        if (!Plugin.Configuration.Enabled) return;
-
-        var dutyName = e.RowId == 0 ? "Duty Roulette" : e.Name.ToDalamudString().TextValue;
-        DncDelivery.Deliver("Duty pop", $"Duty registered: '{dutyName}'.");
-    }
+    private static void OnDutyPop(ContentFinderCondition duty)
+        => DutyNotificationHandler.Default.Handle(
+            duty,
+            Plugin.Configuration,
+            CharacterUtil.IsClientAfk());
 }

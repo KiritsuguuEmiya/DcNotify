@@ -46,7 +46,7 @@ public static class PartyCompositionBuilder
             var role = SampleLayout[i];
             if (filledIndices.Contains(i))
             {
-                slots[i] = new PartySlot(PartySlotKind.Filled, role, PickRandomJobIcon(role));
+                slots[i] = new PartySlot(PartySlotKind.Filled, role, ClassJobRegistry.PickRandomJobIconForRole(role));
             }
             else
             {
@@ -146,14 +146,5 @@ public static class PartyCompositionBuilder
             return 0;
 
         return ClassJobRegistry.GetClassJobIconId(member->ClassJobId);
-    }
-
-    private static uint PickRandomJobIcon(PfRoleGroup role)
-    {
-        var row = ClassJobRegistry.Rows.FirstOrDefault(r => r.Group == role);
-        if (row == null || row.Jobs.Count == 0)
-            return ClassJobRegistry.GetRolePlaceholderIconId(role);
-
-        return row.Jobs[Random.Shared.Next(row.Jobs.Count)].IconId;
     }
 }

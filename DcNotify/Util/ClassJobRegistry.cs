@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -120,6 +121,15 @@ public static class ClassJobRegistry
         };
     }
 
+    public static uint PickRandomJobIconForRole(PfRoleGroup role)
+    {
+        var layout = PfLayout.FirstOrDefault(entry => entry.Group == role);
+        if (layout.Jobs.Length == 0)
+            return GetRolePlaceholderIconId(role);
+
+        return GetClassJobIconId(layout.Jobs[Random.Shared.Next(layout.Jobs.Length)]);
+    }
+
     public static void Initialize()
     {
         rowToGroup = null;
@@ -146,10 +156,10 @@ public static class ClassJobRegistry
     private static Dictionary<uint, PfRoleGroup> BuildRowToGroupMap()
     {
         var map = new Dictionary<uint, PfRoleGroup>();
-        foreach (var row in Rows)
+        foreach (var layout in PfLayout)
         {
-            foreach (var id in row.AllIds)
-                map[id] = row.Group;
+            foreach (var jobId in layout.Jobs)
+                map[jobId] = layout.Group;
         }
 
         return map;

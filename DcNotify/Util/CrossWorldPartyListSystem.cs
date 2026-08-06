@@ -47,17 +47,6 @@ public static class CrossWorldPartyListSystem
         PfRecruitmentSnapshot.Clear();
     }
 
-    private static bool MembersEqual(CrossWorldMember a, CrossWorldMember b)
-    {
-        if (a.ContentId != 0 && b.ContentId != 0)
-            return a.ContentId == b.ContentId;
-
-        return a.Name == b.Name;
-    }
-
-    private static bool ListContainsMember(List<CrossWorldMember> l, CrossWorldMember m)
-        => l.Any(a => MembersEqual(a, m));
-
     private static unsafe void Update(IFramework framework)
     {
         if (!Service.ClientState.IsLoggedIn)
@@ -104,23 +93,17 @@ public static class CrossWorldPartyListSystem
             return;
         }
 
-        foreach (var member in members)
+        foreach (var member in PartyMemberChangeDetector.DetectJoins(members, oldMembers))
         {
-            if (!ListContainsMember(oldMembers, member))
-            {
-                var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
-                PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
-                OnJoin?.Invoke(member);
-            }
+            var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
+            PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
+            OnJoin?.Invoke(member);
         }
 
-        foreach (var member in oldMembers)
+        foreach (var member in PartyMemberChangeDetector.DetectLeaves(members, oldMembers))
         {
-            if (!ListContainsMember(members, member))
-            {
-                OnLeave?.Invoke(member);
-                PfRoleTracker.Remove(member.ContentId, member.Name);
-            }
+            OnLeave?.Invoke(member);
+            PfRoleTracker.Remove(member.ContentId, member.Name);
         }
 
         oldMembers = members.ToList();
