@@ -54,6 +54,11 @@ public class ConfigWindow : Window, IDisposable
                 "This plugin uses your active Dalamud collection profile for settings.");
         }
 
+        if (ImGui.Button("Save"))
+            Configuration.Save();
+
+        ImGui.SameLine();
+
         if (ImGui.Button("Save and close"))
         {
             Configuration.Save();
