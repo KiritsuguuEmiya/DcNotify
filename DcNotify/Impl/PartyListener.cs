@@ -30,7 +30,7 @@ public static class PartyListener
             return;
 
         SendNotification(
-            m.PartyCount == 8 ? "Party full" : $"{m.PartyCount}/8: Party join",
+            FormatJoinTitle(m),
             FormatJoinDescription(m));
     }
 
@@ -41,7 +41,7 @@ public static class PartyListener
 
         var remaining = Math.Max(0, m.PartyCount - 1);
         SendNotification(
-            $"{remaining}/8: Party leave",
+            FormatLeaveTitle(m, remaining),
             FormatLeaveDescription(m, remaining));
     }
 
@@ -67,6 +67,25 @@ public static class PartyListener
         DncDelivery.Deliver(title, description, composition);
     }
 
+    private static string FormatJoinTitle(CrossWorldPartyListSystem.CrossWorldMember m)
+    {
+        if (m.PartyCount == 8)
+            return "Party full";
+
+        var roleLabel = GetStoredRoleLabel(m);
+        return roleLabel != null
+            ? $"{m.PartyCount}/8: {roleLabel} join"
+            : $"{m.PartyCount}/8: Party join";
+    }
+
+    private static string FormatLeaveTitle(CrossWorldPartyListSystem.CrossWorldMember m, int remaining)
+    {
+        var roleLabel = GetStoredRoleLabel(m);
+        return roleLabel != null
+            ? $"{remaining}/8: {roleLabel} leave"
+            : $"{remaining}/8: Party leave";
+    }
+
     private static string FormatJoinDescription(CrossWorldPartyListSystem.CrossWorldMember m)
     {
         var status = FormatStatusLine(m.PartyCount);
@@ -83,7 +102,25 @@ public static class PartyListener
     }
 
     private static string FormatMemberLine(CrossWorldPartyListSystem.CrossWorldMember m)
-        => $"**{m.Name}** (Lv{m.Level})";
+    {
+        var snapshot = PfRoleTracker.Get(m.ContentId, m.Name);
+        var jobId = snapshot?.JoinJobId ?? m.JobId;
+        var jobAbbr = LuminaDataUtil.GetJobAbbreviation(jobId);
+
+        if (snapshot?.SlotRole is { } role)
+        {
+            var roleLabel = ClassJobRegistry.GetRoleLabel(role);
+            return $"**{roleLabel}** — **{m.Name}** (Lv{m.Level} {jobAbbr})";
+        }
+
+        return $"**{m.Name}** (Lv{m.Level} {jobAbbr})";
+    }
+
+    private static string? GetStoredRoleLabel(CrossWorldPartyListSystem.CrossWorldMember m)
+    {
+        var snapshot = PfRoleTracker.Get(m.ContentId, m.Name);
+        return snapshot?.SlotRole is { } role ? ClassJobRegistry.GetRoleLabel(role) : null;
+    }
 
     private static string FormatStatusLine(int filledCount)
     {

@@ -44,6 +44,7 @@ public static class CrossWorldPartyListSystem
         oldMembers.Clear();
         hasBaseline = false;
         PfRoleTracker.Clear();
+        PfRecruitmentSnapshot.Clear();
     }
 
     private static bool MembersEqual(CrossWorldMember a, CrossWorldMember b)
@@ -90,6 +91,14 @@ public static class CrossWorldPartyListSystem
 
         if (!hasBaseline)
         {
+            PfRecruitmentSnapshot.Capture();
+
+            foreach (var member in members)
+            {
+                var slotRole = PfRoleResolver.ResolveSlotRole(member.ContentId, member.MemberIndex);
+                PfRoleTracker.RecordJoin(member.ContentId, member.Name, member.JobId, slotRole);
+            }
+
             oldMembers = members.ToList();
             hasBaseline = true;
             return;

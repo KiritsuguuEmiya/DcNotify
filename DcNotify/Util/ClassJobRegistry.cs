@@ -62,6 +62,18 @@ public static class ClassJobRegistry
     public static uint GetClassJobIconId(uint rowId)
         => rowId is >= 1 and <= 42 ? 62000u + rowId : 0u;
 
+    public static string GetRoleLabel(PfRoleGroup role)
+        => role switch
+        {
+            PfRoleGroup.Tank => "Tank",
+            PfRoleGroup.Healer => "Healer",
+            PfRoleGroup.MeleeDps => "Melee DPS",
+            PfRoleGroup.PhysicalRangedDps => "Physical Ranged DPS",
+            PfRoleGroup.MagicalRangedDps => "Magical Ranged DPS",
+            PfRoleGroup.Free => "Free",
+            _ => "Unknown",
+        };
+
     public static PfRoleGroup? GetRoleFromSlotFlags(ulong slotFlags)
     {
         if (slotFlags == 0)
