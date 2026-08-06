@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Dalamud.Utility;
+using Dnc.Util;
 using Flurl.Http;
 
 namespace Dnc.Delivery;
@@ -82,11 +83,37 @@ public static class DncDelivery
             image = imageUrl == null ? null : new { url = imageUrl },
         };
 
+        var mention = TryBuildMentionPayload();
+        if (mention != null)
+        {
+            return new
+            {
+                username = "DcN",
+                avatar_url = "https://i.imgur.com/wAhXLxp.png",
+                content = mention.Content,
+                allowed_mentions = mention.AllowedMentions,
+                embeds = new[] { embed },
+            };
+        }
+
         return new
         {
             username = "DcN",
             avatar_url = "https://i.imgur.com/wAhXLxp.png",
             embeds = new[] { embed },
         };
+    }
+
+    private static DiscordMentionPayload? TryBuildMentionPayload()
+    {
+        var config = Plugin.Configuration;
+        if (!config.DiscordMentionEnabled || config.DiscordMentionTarget.IsNullOrWhitespace())
+            return null;
+
+        var mention = DiscordMentionUtil.TryParse(config.DiscordMentionTarget);
+        if (mention == null)
+            Service.PluginLog.Warning("Discord mention target is invalid, sending without ping.");
+
+        return mention;
     }
 }

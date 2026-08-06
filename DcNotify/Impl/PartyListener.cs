@@ -39,6 +39,8 @@ public static class PartyListener
         if (!CharacterUtil.IsClientAfk()) return;
         if (!Plugin.Configuration.Enabled) return;
 
+        if (!Plugin.Configuration.ShouldNotifyForLeave()) return;
+
         var remaining = Math.Max(0, m.PartyCount - 1);
         SendNotification(
             FormatLeaveTitle(m, remaining),

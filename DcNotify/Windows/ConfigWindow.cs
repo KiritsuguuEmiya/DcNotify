@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -81,6 +82,25 @@ public class ConfigWindow : Window, IDisposable
         }
 
         {
+            var cfg = Configuration.DiscordMentionEnabled;
+            if (ImGui.Checkbox("Include Discord mention (for mobile push)", ref cfg))
+                Configuration.DiscordMentionEnabled = cfg;
+        }
+
+        ImGui.BeginDisabled(!Configuration.DiscordMentionEnabled);
+        {
+            var cfg = Configuration.DiscordMentionTarget ?? string.Empty;
+            if (ImGui.InputText("Mention target (user or role ID)", ref cfg, 128))
+                Configuration.DiscordMentionTarget = cfg;
+        }
+        ImGui.EndDisabled();
+
+        ImGui.TextWrapped(
+            "Enable Discord Developer Mode, then right-click a user or role and choose Copy User/Role ID. " +
+            "Paste the raw ID or full mention string (<@...> or <@&...>). " +
+            "Set the channel notification preference to Only @mentions for mobile push.");
+
+        {
             var cfg = Configuration.EnableForDutyPops;
             if (ImGui.Checkbox("Send message for duty pop?", ref cfg))
                 Configuration.EnableForDutyPops = cfg;
@@ -89,8 +109,7 @@ public class ConfigWindow : Window, IDisposable
         if (ImGui.Button("Send test notification"))
         {
             notifSentMessageTimer.Start();
-            DncDelivery.Deliver("Test notification",
-                "If you received this, DcN is configured correctly.");
+            _ = SendTestNotificationAsync();
         }
 
         if (notifSentMessageTimer.Value)
@@ -127,6 +146,28 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.TextColored(green, "You are AFK. The plugin is active and notifications will be served.");
             }
         }
+    }
+
+    private static async Task SendTestNotificationAsync()
+    {
+        var slots = PartyCompositionBuilder.BuildRandomSample();
+        var filled = PartyCompositionBuilder.CountFilled(slots);
+        var remaining = Math.Max(0, 8 - filled);
+
+        byte[]? composition = null;
+        try
+        {
+            composition = await PartyCompositionRenderer.RenderAsync(slots);
+        }
+        catch (Exception ex)
+        {
+            Service.PluginLog.Warning(ex, "Failed to render test party composition.");
+        }
+
+        DncDelivery.Deliver(
+            "Test notification",
+            $"**Preview Player** (Lv100) joins the party.\n\n**{filled}/8 filled · {remaining} players remaining**",
+            composition);
     }
 
     private void DrawClassFilterTab()

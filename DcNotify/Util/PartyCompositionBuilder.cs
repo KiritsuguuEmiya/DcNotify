@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
 namespace Dnc.Util;
@@ -15,8 +17,51 @@ public static class PartyCompositionBuilder
 {
     private const int PartySlotCount = 8;
 
+    private static readonly PfRoleGroup[] SampleLayout =
+    [
+        PfRoleGroup.Tank,
+        PfRoleGroup.Tank,
+        PfRoleGroup.Healer,
+        PfRoleGroup.Healer,
+        PfRoleGroup.MeleeDps,
+        PfRoleGroup.PhysicalRangedDps,
+        PfRoleGroup.MagicalRangedDps,
+        PfRoleGroup.MeleeDps,
+    ];
+
     public static PartySlot[] Build()
         => PfRecruitmentSnapshot.HasPfLayout() ? BuildFromPf() : BuildFromPartyList();
+
+    public static PartySlot[] BuildRandomSample()
+    {
+        var slots = new PartySlot[PartySlotCount];
+        var filledCount = Random.Shared.Next(1, PartySlotCount + 1);
+        var filledIndices = Enumerable.Range(0, PartySlotCount)
+            .OrderBy(_ => Random.Shared.Next())
+            .Take(filledCount)
+            .ToHashSet();
+
+        for (var i = 0; i < PartySlotCount; i++)
+        {
+            var role = SampleLayout[i];
+            if (filledIndices.Contains(i))
+            {
+                slots[i] = new PartySlot(PartySlotKind.Filled, role, PickRandomJobIcon(role));
+            }
+            else
+            {
+                slots[i] = new PartySlot(
+                    PartySlotKind.Empty,
+                    role,
+                    ClassJobRegistry.GetRolePlaceholderIconId(role));
+            }
+        }
+
+        return slots;
+    }
+
+    public static int CountFilled(PartySlot[] slots)
+        => slots.Count(s => s.Kind == PartySlotKind.Filled);
 
     private static PartySlot[] BuildFromPf()
     {
@@ -101,5 +146,14 @@ public static class PartyCompositionBuilder
             return 0;
 
         return ClassJobRegistry.GetClassJobIconId(member->ClassJobId);
+    }
+
+    private static uint PickRandomJobIcon(PfRoleGroup role)
+    {
+        var row = ClassJobRegistry.Rows.FirstOrDefault(r => r.Group == role);
+        if (row == null || row.Jobs.Count == 0)
+            return ClassJobRegistry.GetRolePlaceholderIconId(role);
+
+        return row.Jobs[Random.Shared.Next(row.Jobs.Count)].IconId;
     }
 }

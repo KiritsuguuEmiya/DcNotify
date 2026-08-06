@@ -35,4 +35,7 @@ public class Service
 
     [PluginService]
     public static ITextureProvider TextureProvider { get; private set; } = null!;
+
+    [PluginService]
+    public static ITextureReadbackProvider TextureReadback { get; private set; } = null!;
 }

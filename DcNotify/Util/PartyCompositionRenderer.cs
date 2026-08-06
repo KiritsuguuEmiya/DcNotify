@@ -4,7 +4,6 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
-using Flurl.Http;
 
 namespace Dnc.Util;
 
@@ -13,7 +12,6 @@ public static class PartyCompositionRenderer
     private const int SlotSize = 40;
     private const int SlotPadding = 4;
     private const int BorderWidth = 2;
-    private const string IconUrlFormat = "https://xivapi.com/i/020000/{0}.png";
 
     public static async Task<byte[]?> RenderAsync(PartySlot[] slots)
     {
@@ -61,7 +59,7 @@ public static class PartyCompositionRenderer
                     graphics.FillRoundedRectangle(innerBrush, inner, 4);
 
                 var iconRect = Rectangle.Inflate(inner, -3, -3);
-                var icon = await LoadIconAsync(slot.IconId);
+                var icon = await GameIconLoader.LoadAsync(slot.IconId);
                 if (icon != null)
                 {
                     using (icon)
@@ -84,24 +82,6 @@ public static class PartyCompositionRenderer
         catch (Exception ex)
         {
             Service.PluginLog.Warning(ex, "Failed to render party composition image.");
-            return null;
-        }
-    }
-
-    private static async Task<Bitmap?> LoadIconAsync(uint iconId)
-    {
-        if (iconId == 0)
-            return null;
-
-        try
-        {
-            var bytes = await string.Format(IconUrlFormat, iconId).GetBytesAsync();
-            using var stream = new MemoryStream(bytes);
-            return new Bitmap(stream);
-        }
-        catch (Exception ex)
-        {
-            Service.PluginLog.Debug(ex, $"Failed to load icon {iconId} from XIVAPI.");
             return null;
         }
     }

@@ -6,10 +6,17 @@ using Dalamud.Plugin;
 
 namespace Dnc;
 
+public enum ClassFilterMode
+{
+    All = 0,
+    None = 1,
+    Selected = 2,
+}
+
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 3;
+    public int Version { get; set; } = 5;
 
     public bool EnableForDutyPops { get; set; } = true;
     public bool IgnoreAfkStatus { get; set; } = false;
@@ -17,6 +24,12 @@ public class Configuration : IPluginConfiguration
     public bool Enabled { get; set; } = true;
 
     public string DcHook { get; set; } = "";
+
+    public bool DiscordMentionEnabled { get; set; } = false;
+
+    public string DiscordMentionTarget { get; set; } = "";
+
+    public ClassFilterMode ClassFilterMode { get; set; } = ClassFilterMode.All;
 
     public List<uint> SelectedClassJobIds { get; set; } = new();
 
@@ -35,16 +48,35 @@ public class Configuration : IPluginConfiguration
 
     public bool ShouldNotifyForClassJob(uint classJobId)
     {
-        if (SelectedClassJobIds.Count == 0)
-            return true;
-
-        return SelectedClassJobIds.Contains(classJobId);
+        return ClassFilterMode switch
+        {
+            ClassFilterMode.All => true,
+            ClassFilterMode.None => false,
+            ClassFilterMode.Selected => SelectedClassJobIds.Contains(classJobId),
+            _ => true,
+        };
     }
+
+    public bool ShouldNotifyForLeave()
+        => ClassFilterMode != ClassFilterMode.None;
 
     public bool IsClassJobSelected(uint classJobId) => SelectedClassJobIds.Contains(classJobId);
 
+    public void SetClassFilterAll()
+    {
+        ClassFilterMode = ClassFilterMode.All;
+        SelectedClassJobIds.Clear();
+    }
+
+    public void SetClassFilterNone()
+    {
+        ClassFilterMode = ClassFilterMode.None;
+        SelectedClassJobIds.Clear();
+    }
+
     public void ToggleClassJob(uint classJobId)
     {
+        ClassFilterMode = ClassFilterMode.Selected;
         if (SelectedClassJobIds.Contains(classJobId))
             SelectedClassJobIds.Remove(classJobId);
         else
@@ -53,6 +85,7 @@ public class Configuration : IPluginConfiguration
 
     public void SetRoleGroup(IEnumerable<uint> classJobIds, bool selected)
     {
+        ClassFilterMode = ClassFilterMode.Selected;
         foreach (var classJobId in classJobIds)
         {
             if (selected)
@@ -67,7 +100,7 @@ public class Configuration : IPluginConfiguration
         }
     }
 
-    public void ClearClassJobSelection() => SelectedClassJobIds.Clear();
+    public void ClearClassJobSelection() => SetClassFilterAll();
 
     public bool IsRoleGroupFullySelected(IEnumerable<uint> classJobIds)
     {

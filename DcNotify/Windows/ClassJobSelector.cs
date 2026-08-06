@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
@@ -14,15 +15,21 @@ public static class ClassJobSelector
 
     public static void Draw(Configuration configuration)
     {
-        var notifyAll = configuration.SelectedClassJobIds.Count == 0;
-
-        if (notifyAll)
-            ImGui.TextDisabled("ALL jobs selected — join notifications are not filtered.");
-        else
-            ImGui.Text($"Filtering {configuration.SelectedClassJobIds.Count} job(s). Party full (8/8) always notifies.");
+        switch (configuration.ClassFilterMode)
+        {
+            case ClassFilterMode.All:
+                ImGui.TextDisabled("ALL — notify on every join.");
+                break;
+            case ClassFilterMode.None:
+                ImGui.TextDisabled("NONE — notify only when party is full (8/8).");
+                break;
+            case ClassFilterMode.Selected:
+                ImGui.Text($"Filtering {configuration.SelectedClassJobIds.Count} job(s). Party full (8/8) always notifies.");
+                break;
+        }
 
         ImGui.Spacing();
-        DrawAllOption(configuration, notifyAll);
+        DrawPresetOptions(configuration);
         ImGui.Spacing();
 
         using (var table = ImRaii.Table("ClassJobSelectorTable", 2,
@@ -51,20 +58,30 @@ public static class ClassJobSelector
         }
     }
 
-    private static void DrawAllOption(Configuration configuration, bool notifyAll)
+    private static void DrawPresetOptions(Configuration configuration)
     {
-        var size = new Vector2(RoleColumnWidth - 8f, IconSize);
+        var buttonWidth = (RoleColumnWidth - 12f) / 2f;
+        var buttonSize = new Vector2(buttonWidth, IconSize);
+        var notifyAll = configuration.ClassFilterMode == ClassFilterMode.All;
+        var notifyNone = configuration.ClassFilterMode == ClassFilterMode.None;
+
+        DrawPresetOption("ALL", notifyAll, buttonSize, new Vector4(0.35f, 0.35f, 0.35f, 1f), () => configuration.SetClassFilterAll());
+        ImGui.SameLine(0f, 8f);
+        DrawPresetOption("NONE", notifyNone, buttonSize, new Vector4(0.28f, 0.28f, 0.28f, 1f), () => configuration.SetClassFilterNone());
+    }
+
+    private static void DrawPresetOption(string label, bool selected, Vector2 size, Vector4 bgColor, Action onClick)
+    {
         var pos = ImGui.GetCursorScreenPos();
         var drawList = ImGui.GetWindowDrawList();
-        var bg = notifyAll ? new Vector4(0.35f, 0.35f, 0.35f, 1f) : new Vector4(0.22f, 0.22f, 0.22f, 1f);
-        drawList.AddRectFilled(pos, pos + size, ToColorU32(bg), 4f);
+        drawList.AddRectFilled(pos, pos + size, ToColorU32(bgColor), 4f);
 
         ImGui.PushStyleColor(ImGuiCol.Header, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new Vector4(1f, 1f, 1f, 0.12f));
         ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Vector4(1f, 1f, 1f, 0.2f));
-        ImGui.PushStyleColor(ImGuiCol.Text, notifyAll ? Vector4.One : new Vector4(0.7f, 0.7f, 0.7f, 1f));
-        if (ImGui.Selectable("ALL", notifyAll, ImGuiSelectableFlags.None, size))
-            configuration.ClearClassJobSelection();
+        ImGui.PushStyleColor(ImGuiCol.Text, selected ? Vector4.One : new Vector4(0.7f, 0.7f, 0.7f, 1f));
+        if (ImGui.Selectable(label, selected, ImGuiSelectableFlags.None, size))
+            onClick();
 
         ImGui.PopStyleColor(4);
     }
@@ -125,7 +142,7 @@ public static class ClassJobSelector
             return;
         }
 
-        var isFiltering = configuration.SelectedClassJobIds.Count > 0;
+        var isFiltering = configuration.ClassFilterMode == ClassFilterMode.Selected;
         var isSelected = configuration.IsClassJobSelected(entry.RowId);
         var tint = isFiltering
             ? (isSelected ? Vector4.One : new Vector4(0.55f, 0.55f, 0.55f, 0.75f))
