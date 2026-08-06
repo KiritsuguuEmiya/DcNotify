@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and publish (e.g. v1.3.0)'
+        required: true
+        default: 'v1.3.0'
 
 permissions:
   contents: write
@@ -13,10 +19,25 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Restore Dalamud dev libraries
+        shell: pwsh
+        run: |
+          $dalamudHome = "$env:GITHUB_WORKSPACE/.dalamud"
+          New-Item -ItemType Directory -Force -Path $dalamudHome | Out-Null
+          $versionInfo = Invoke-RestMethod -Uri "https://kamori.goats.dev/Dalamud/Release/VersionInfo"
+          $zipPath = Join-Path $env:RUNNER_TEMP "dalamud.zip"
+          Invoke-WebRequest -Uri $versionInfo.downloadUrl -OutFile $zipPath
+          Expand-Archive -Path $zipPath -DestinationPath $dalamudHome -Force
+          $devPath = Get-ChildItem -Path $dalamudHome -Recurse -Directory -Filter dev | Select-Object -First 1
+          if (-not $devPath) { throw "Could not find Dalamud dev folder in downloaded archive." }
+          echo "DalamudLibPath=$($devPath.FullName)" >> $env:GITHUB_ENV
 
       - name: Build
         run: dotnet build DcNotify/DcNotify.csproj -c Release
@@ -24,5 +45,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           files: DcNotify/bin/Release/DcNotify/latest.zip
           generate_release_notes: true

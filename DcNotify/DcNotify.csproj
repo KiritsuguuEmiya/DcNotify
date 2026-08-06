@@ -39,7 +39,7 @@
     <InternalsVisibleTo Include="DcNotify.IntegrationTests" />
   </ItemGroup>
 
-  <Target Name="DeployDevPlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+  <Target Name="DeployDevPlugin" AfterTargets="Build" Condition="('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release') And '$(GITHUB_ACTIONS)' != 'true'">
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\scripts\deploy-dev.ps1&quot; -Configuration $(Configuration) -SourceDir &quot;$(TargetDir)&quot;" />
   </Target>
 </Project>
