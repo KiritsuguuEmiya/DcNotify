@@ -44,7 +44,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Opens settings\n't' toggles whether it's enabled.\n'on' enables the plugin\n'off' disables the plugin."
+            HelpMessage = "Opens settings\n'version' shows loaded build\n't' toggles whether it's enabled.\n'on' enables the plugin\n'off' disables the plugin."
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -86,6 +86,9 @@ public sealed class Plugin : IDalamudPlugin
             case "off":
                 Configuration.Enabled = false;
                 Service.ChatGui.Print("DcN plugin disabled.");
+                break;
+            case "version" or "v":
+                Service.ChatGui.Print($"DcN v{typeof(Plugin).Assembly.GetName().Version} loaded.");
                 break;
             case "":
                 ConfigWindow.IsOpen = true;

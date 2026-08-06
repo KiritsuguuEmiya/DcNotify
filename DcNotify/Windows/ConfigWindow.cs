@@ -17,7 +17,7 @@ public class ConfigWindow : Window, IDisposable
     private readonly TimedBool notifSentMessageTimer = new(3.0f);
 
     public ConfigWindow(Plugin plugin) : base(
-        "DcN Configuration",
+        $"DcN Configuration (v{typeof(Plugin).Assembly.GetName().Version})",
         ImGuiWindowFlags.NoCollapse)
     {
         Configuration = Plugin.Configuration;
