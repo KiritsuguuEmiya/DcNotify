@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dnc.Delivery;
@@ -19,13 +20,48 @@ public class ConfigWindow : Window, IDisposable
         ImGuiWindowFlags.NoCollapse)
     {
         Configuration = Plugin.Configuration;
-        Size = new Vector2(560, 680);
+        Size = new Vector2(560, 420);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
     public void Dispose() { }
 
     public override void Draw()
+    {
+        using (var tabBar = ImRaii.TabBar("DcNConfigTabs"))
+        {
+            if (!tabBar)
+                return;
+
+            using (var settingsTab = ImRaii.TabItem("Settings"))
+            {
+                if (settingsTab)
+                    DrawSettingsTab();
+            }
+
+            using (var classFilterTab = ImRaii.TabItem("Class Filter"))
+            {
+                if (classFilterTab)
+                    DrawClassFilterTab();
+            }
+        }
+
+        ImGui.Spacing();
+
+        if (PluginInterface.IsInProfile)
+        {
+            ImGui.TextColored(new Vector4(0.6f, 0.8f, 1.0f, 1.0f),
+                "This plugin uses your active Dalamud collection profile for settings.");
+        }
+
+        if (ImGui.Button("Save and close"))
+        {
+            Configuration.Save();
+            IsOpen = false;
+        }
+    }
+
+    private void DrawSettingsTab()
     {
         {
             var cfg = Configuration.Enabled;
@@ -86,20 +122,11 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.TextColored(green, "You are AFK. The plugin is active and notifications will be served.");
             }
         }
+    }
 
+    private void DrawClassFilterTab()
+    {
         ClassJobSelector.Draw(Configuration);
-
-        if (PluginInterface.IsInProfile)
-        {
-            ImGui.TextColored(new Vector4(0.6f, 0.8f, 1.0f, 1.0f),
-                "This plugin uses your active Dalamud collection profile for settings.");
-        }
-
-        if (ImGui.Button("Save and close"))
-        {
-            Configuration.Save();
-            IsOpen = false;
-        }
     }
 
     private static IDalamudPluginInterface PluginInterface => Service.PluginInterface;

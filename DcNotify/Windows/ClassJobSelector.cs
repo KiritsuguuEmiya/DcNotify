@@ -14,9 +14,6 @@ public static class ClassJobSelector
 
     public static void Draw(Configuration configuration)
     {
-        ImGui.TextUnformatted("Class filter (party join notifications)");
-        ImGui.Separator();
-
         if (configuration.SelectedClassJobIds.Count == 0)
             ImGui.TextDisabled("Notify all classes (none selected). Select classes to filter join notifications.");
         else
