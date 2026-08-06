@@ -1,6 +1,7 @@
 .vs/
 .idea/
 .cursor/
+scripts/
 obj/
 bin/
 *.user
