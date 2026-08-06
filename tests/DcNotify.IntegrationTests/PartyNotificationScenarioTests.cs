@@ -81,10 +81,11 @@ public sealed class PartyNotificationScenarioTests : IDisposable
     }
 
     [Fact]
-    public void Leave_DeliversWithoutClassFilter()
+    public void Leave_FilterMatchesJob_DeliversNotification()
     {
+        config.NotifyOnFilteredLeave = true;
         config.ClassFilterMode = ClassFilterMode.Selected;
-        config.SelectedClassJobIds = [24];
+        config.SelectedClassJobIds = [19];
 
         handler.HandleLeave(Member(jobId: 19, partyCount: 4), config, isClientAfk: true, includeComposition: false);
 
@@ -93,9 +94,22 @@ public sealed class PartyNotificationScenarioTests : IDisposable
     }
 
     [Fact]
-    public void Leave_FilterNone_DoesNotDeliver()
+    public void Leave_FilterExcludesJob_DoesNotDeliver()
     {
-        config.ClassFilterMode = ClassFilterMode.None;
+        config.NotifyOnFilteredLeave = true;
+        config.ClassFilterMode = ClassFilterMode.Selected;
+        config.SelectedClassJobIds = [24];
+
+        handler.HandleLeave(Member(jobId: 19, partyCount: 4), config, isClientAfk: true, includeComposition: false);
+
+        Assert.Empty(sink.Deliveries);
+    }
+
+    [Fact]
+    public void Leave_ToggleOff_DoesNotDeliver()
+    {
+        config.NotifyOnFilteredLeave = false;
+        config.ClassFilterMode = ClassFilterMode.All;
 
         handler.HandleLeave(Member(partyCount: 4), config, isClientAfk: true, includeComposition: false);
 

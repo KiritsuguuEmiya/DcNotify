@@ -15,6 +15,6 @@ public static class PartyNotificationPolicy
         return config.ShouldNotifyForClassJob(member.JobId);
     }
 
-    public static bool ShouldNotifyLeave(Configuration config)
-        => config.ShouldNotifyForLeave();
+    public static bool ShouldNotifyLeave(Configuration config, CrossWorldPartyListSystem.CrossWorldMember member)
+        => config.ShouldNotifyLeaveForClassJob(member.JobId);
 }

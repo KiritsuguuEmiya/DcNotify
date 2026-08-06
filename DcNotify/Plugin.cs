@@ -53,6 +53,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CrossWorldPartyListSystem.Start();
         PartyListener.On();
+        PartyChatListener.On();
         DutyListener.On();
     }
 
@@ -64,6 +65,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CrossWorldPartyListSystem.Stop();
         PartyListener.Off();
+        PartyChatListener.Off();
         DutyListener.Off();
 
         CommandManager.RemoveHandler(CommandName);

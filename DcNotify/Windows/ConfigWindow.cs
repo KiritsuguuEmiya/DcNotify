@@ -34,10 +34,16 @@ public class ConfigWindow : Window, IDisposable
             if (!tabBar)
                 return;
 
-            using (var settingsTab = ImRaii.TabItem("Settings"))
+            using (var applicationTab = ImRaii.TabItem("Application"))
             {
-                if (settingsTab)
-                    DrawSettingsTab();
+                if (applicationTab)
+                    DrawApplicationTab();
+            }
+
+            using (var apiTab = ImRaii.TabItem("API"))
+            {
+                if (apiTab)
+                    DrawApiTab();
             }
 
             using (var classFilterTab = ImRaii.TabItem("Class Filter"))
@@ -67,7 +73,7 @@ public class ConfigWindow : Window, IDisposable
         }
     }
 
-    private void DrawSettingsTab()
+    private void DrawApplicationTab()
     {
         {
             var cfg = Configuration.Enabled;
@@ -76,46 +82,21 @@ public class ConfigWindow : Window, IDisposable
         }
 
         {
-            var cfg = Configuration.DcHook ?? string.Empty;
-            if (ImGui.InputText("Webhook URL", ref cfg, 2048))
-                Configuration.DcHook = cfg;
-        }
-
-        {
-            var cfg = Configuration.DiscordMentionEnabled;
-            if (ImGui.Checkbox("Include Discord mention (for mobile push)", ref cfg))
-                Configuration.DiscordMentionEnabled = cfg;
-        }
-
-        ImGui.BeginDisabled(!Configuration.DiscordMentionEnabled);
-        {
-            var cfg = Configuration.DiscordMentionTarget ?? string.Empty;
-            if (ImGui.InputText("Mention target (user or role ID)", ref cfg, 128))
-                Configuration.DiscordMentionTarget = cfg;
-        }
-        ImGui.EndDisabled();
-
-        ImGui.TextWrapped(
-            "Enable Discord Developer Mode, then right-click a user or role and choose Copy User/Role ID. " +
-            "Paste the raw ID or full mention string (<@...> or <@&...>). " +
-            "Set the channel notification preference to Only @mentions for mobile push.");
-
-        {
             var cfg = Configuration.EnableForDutyPops;
             if (ImGui.Checkbox("Send message for duty pop?", ref cfg))
                 Configuration.EnableForDutyPops = cfg;
         }
 
-        if (ImGui.Button("Send test notification"))
         {
-            notifSentMessageTimer.Start();
-            _ = SendTestNotificationAsync();
+            var cfg = Configuration.NotifyOnFilteredLeave;
+            if (ImGui.Checkbox("Notify when filtered people leave", ref cfg))
+                Configuration.NotifyOnFilteredLeave = cfg;
         }
 
-        if (notifSentMessageTimer.Value)
         {
-            ImGui.SameLine();
-            ImGui.Text("Notification sent!");
+            var cfg = Configuration.NotifyOnPartyChatMessages;
+            if (ImGui.Checkbox("Send party chat messages as notifications", ref cfg))
+                Configuration.NotifyOnPartyChatMessages = cfg;
         }
 
         {
@@ -146,6 +127,53 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.TextColored(green, "You are AFK. The plugin is active and notifications will be served.");
             }
         }
+    }
+
+    private void DrawApiTab()
+    {
+        ImGui.TextUnformatted("Discord API");
+        ImGui.Separator();
+
+        {
+            var cfg = Configuration.DcHook ?? string.Empty;
+            if (ImGui.InputText("Webhook URL", ref cfg, 2048))
+                Configuration.DcHook = cfg;
+        }
+
+        if (ImGui.Button("Send test notification"))
+        {
+            notifSentMessageTimer.Start();
+            _ = SendTestNotificationAsync();
+        }
+
+        if (notifSentMessageTimer.Value)
+        {
+            ImGui.SameLine();
+            ImGui.Text("Notification sent!");
+        }
+
+        ImGui.Spacing();
+        ImGui.TextUnformatted("User API");
+        ImGui.Separator();
+
+        {
+            var cfg = Configuration.DiscordMentionEnabled;
+            if (ImGui.Checkbox("Include Discord mention (for mobile push)", ref cfg))
+                Configuration.DiscordMentionEnabled = cfg;
+        }
+
+        ImGui.BeginDisabled(!Configuration.DiscordMentionEnabled);
+        {
+            var cfg = Configuration.DiscordMentionTarget ?? string.Empty;
+            if (ImGui.InputText("Mention target (user or role ID)", ref cfg, 128))
+                Configuration.DiscordMentionTarget = cfg;
+        }
+        ImGui.EndDisabled();
+
+        ImGui.TextWrapped(
+            "Enable Discord Developer Mode, then right-click a user or role and choose Copy User/Role ID. " +
+            "Paste the raw ID or full mention string (<@...> or <@&...>). " +
+            "Set the channel notification preference to Only @mentions for mobile push.");
     }
 
     private static async Task SendTestNotificationAsync()

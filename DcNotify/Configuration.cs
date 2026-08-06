@@ -16,10 +16,12 @@ public enum ClassFilterMode
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 5;
+    public int Version { get; set; } = 6;
 
     public bool EnableForDutyPops { get; set; } = true;
     public bool IgnoreAfkStatus { get; set; } = false;
+    public bool NotifyOnFilteredLeave { get; set; } = false;
+    public bool NotifyOnPartyChatMessages { get; set; } = false;
 
     public bool Enabled { get; set; } = true;
 
@@ -57,8 +59,8 @@ public class Configuration : IPluginConfiguration
         };
     }
 
-    public bool ShouldNotifyForLeave()
-        => ClassFilterMode != ClassFilterMode.None;
+    public bool ShouldNotifyLeaveForClassJob(uint classJobId)
+        => NotifyOnFilteredLeave && ShouldNotifyForClassJob(classJobId);
 
     public bool IsClassJobSelected(uint classJobId) => SelectedClassJobIds.Contains(classJobId);
 

@@ -46,18 +46,40 @@ public class PartyNotificationPolicyTests
     }
 
     [Fact]
-    public void ShouldNotifyLeave_FalseWhenFilterNone()
+    public void ShouldNotifyLeave_ToggleOff_ReturnsFalse()
     {
-        var config = new Configuration { ClassFilterMode = ClassFilterMode.None };
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = false,
+            ClassFilterMode = ClassFilterMode.All,
+        };
 
-        Assert.False(PartyNotificationPolicy.ShouldNotifyLeave(config));
+        Assert.False(PartyNotificationPolicy.ShouldNotifyLeave(config, Member()));
     }
 
     [Fact]
-    public void ShouldNotifyLeave_TrueWhenFilterNotNone()
+    public void ShouldNotifyLeave_FilterMatchesJob_ReturnsTrue()
     {
-        var config = new Configuration { ClassFilterMode = ClassFilterMode.All };
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = true,
+            ClassFilterMode = ClassFilterMode.Selected,
+            SelectedClassJobIds = [19],
+        };
 
-        Assert.True(PartyNotificationPolicy.ShouldNotifyLeave(config));
+        Assert.True(PartyNotificationPolicy.ShouldNotifyLeave(config, Member(jobId: 19)));
+        Assert.False(PartyNotificationPolicy.ShouldNotifyLeave(config, Member(jobId: 24)));
+    }
+
+    [Fact]
+    public void ShouldNotifyLeave_FilterNone_ReturnsFalse()
+    {
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = true,
+            ClassFilterMode = ClassFilterMode.None,
+        };
+
+        Assert.False(PartyNotificationPolicy.ShouldNotifyLeave(config, Member()));
     }
 }

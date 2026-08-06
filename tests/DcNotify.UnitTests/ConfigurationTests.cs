@@ -37,21 +37,41 @@ public class ConfigurationTests
     }
 
     [Fact]
-    public void ShouldNotifyForLeave_NoneMode_ReturnsFalse()
+    public void ShouldNotifyLeaveForClassJob_ToggleOff_ReturnsFalse()
     {
-        var config = new Configuration { ClassFilterMode = ClassFilterMode.None };
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = false,
+            ClassFilterMode = ClassFilterMode.All,
+        };
 
-        Assert.False(config.ShouldNotifyForLeave());
+        Assert.False(config.ShouldNotifyLeaveForClassJob(19));
     }
 
-    [Theory]
-    [InlineData(ClassFilterMode.All)]
-    [InlineData(ClassFilterMode.Selected)]
-    public void ShouldNotifyForLeave_NonNoneMode_ReturnsTrue(ClassFilterMode mode)
+    [Fact]
+    public void ShouldNotifyLeaveForClassJob_ToggleOn_UsesClassFilter()
     {
-        var config = new Configuration { ClassFilterMode = mode };
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = true,
+            ClassFilterMode = ClassFilterMode.Selected,
+            SelectedClassJobIds = [19],
+        };
 
-        Assert.True(config.ShouldNotifyForLeave());
+        Assert.True(config.ShouldNotifyLeaveForClassJob(19));
+        Assert.False(config.ShouldNotifyLeaveForClassJob(24));
+    }
+
+    [Fact]
+    public void ShouldNotifyLeaveForClassJob_ToggleOn_NoneMode_ReturnsFalse()
+    {
+        var config = new Configuration
+        {
+            NotifyOnFilteredLeave = true,
+            ClassFilterMode = ClassFilterMode.None,
+        };
+
+        Assert.False(config.ShouldNotifyLeaveForClassJob(19));
     }
 
     [Fact]

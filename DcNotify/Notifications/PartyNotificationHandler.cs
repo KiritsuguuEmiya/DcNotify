@@ -49,7 +49,7 @@ public sealed class PartyNotificationHandler
         if (!PartyNotificationPolicy.ShouldNotify(config.Enabled, isClientAfk))
             return;
 
-        if (!PartyNotificationPolicy.ShouldNotifyLeave(config))
+        if (!PartyNotificationPolicy.ShouldNotifyLeave(config, member))
             return;
 
         var remaining = Math.Max(0, member.PartyCount - 1);
