@@ -44,6 +44,7 @@ public sealed class Plugin : IDalamudPlugin
         PartyNotificationHandler.Initialize(notificationSink);
         DutyNotificationHandler.Initialize(notificationSink);
         PartyChatNotificationHandler.Initialize(notificationSink);
+        AfkPartyMessageHandler.Initialize(new GamePartyChatSender());
 
         ConfigWindow = new ConfigWindow(this);
 
@@ -61,6 +62,7 @@ public sealed class Plugin : IDalamudPlugin
         CrossWorldPartyListSystem.Start();
         PartyListener.On();
         PartyChatListener.On();
+        AfkPartyMessageListener.On();
         DutyListener.On();
     }
 
@@ -73,6 +75,7 @@ public sealed class Plugin : IDalamudPlugin
         CrossWorldPartyListSystem.Stop();
         PartyListener.Off();
         PartyChatListener.Off();
+        AfkPartyMessageListener.Off();
         DutyListener.Off();
 
         CommandManager.RemoveHandler(CommandName);

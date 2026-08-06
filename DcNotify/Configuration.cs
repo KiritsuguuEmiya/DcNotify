@@ -16,12 +16,18 @@ public enum ClassFilterMode
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 6;
+    public int Version { get; set; } = 7;
 
     public bool EnableForDutyPops { get; set; } = true;
     public bool IgnoreAfkStatus { get; set; } = false;
     public bool NotifyOnFilteredLeave { get; set; } = false;
     public bool NotifyOnPartyChatMessages { get; set; } = false;
+
+    public bool AfkPartyMessageEnabled { get; set; } = false;
+
+    public string AfkPartyMessageTemplate { get; set; } = "brb in 5 minutes";
+
+    public int AfkPartyMessageDelaySeconds { get; set; } = 8;
 
     public bool Enabled { get; set; } = true;
 

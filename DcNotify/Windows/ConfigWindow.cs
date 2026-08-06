@@ -15,6 +15,9 @@ public class ConfigWindow : Window, IDisposable
     private readonly Configuration Configuration;
 
     private readonly TimedBool notifSentMessageTimer = new(3.0f);
+    private readonly TimedBool partyMessageSentTimer = new(3.0f);
+    private string partyMessageStatus = string.Empty;
+    private bool partyMessageStatusIsError;
 
     public ConfigWindow(Plugin plugin) : base(
         $"DcN Configuration (v{typeof(Plugin).Assembly.GetName().Version})",
@@ -97,6 +100,58 @@ public class ConfigWindow : Window, IDisposable
             var cfg = Configuration.NotifyOnPartyChatMessages;
             if (ImGui.Checkbox("Send party chat messages as notifications", ref cfg))
                 Configuration.NotifyOnPartyChatMessages = cfg;
+        }
+
+        ImGui.Spacing();
+        ImGui.TextUnformatted("AFK party auto-message");
+        ImGui.Separator();
+
+        {
+            var cfg = Configuration.AfkPartyMessageEnabled;
+            if (ImGui.Checkbox("Send AFK message to party chat when full", ref cfg))
+                Configuration.AfkPartyMessageEnabled = cfg;
+        }
+
+        ImGui.BeginDisabled(!Configuration.AfkPartyMessageEnabled);
+        {
+            var message = Configuration.AfkPartyMessageTemplate ?? string.Empty;
+            if (ImGui.InputText("Party chat message", ref message, 256))
+                Configuration.AfkPartyMessageTemplate = message;
+
+            var delaySeconds = Configuration.AfkPartyMessageDelaySeconds;
+            if (ImGui.SliderInt("Delay before send (seconds)", ref delaySeconds, 5, 60))
+                Configuration.AfkPartyMessageDelaySeconds = delaySeconds;
+        }
+        ImGui.EndDisabled();
+
+        if (ImGui.Button("Send test message"))
+        {
+            partyMessageSentTimer.Start();
+            var result = AfkPartyMessageHandler.Default.SendTestMessage(Configuration);
+            partyMessageStatus = result.Success
+                ? "Party message sent!"
+                : result.ErrorMessage ?? "Could not send party chat message.";
+            partyMessageStatusIsError = !result.Success;
+
+            if (!result.Success)
+                Service.ChatGui.PrintError($"[DcN] {partyMessageStatus}");
+            else
+                Service.ChatGui.Print("[DcN] Test party message sent.");
+        }
+
+        if (partyMessageSentTimer.Value)
+        {
+            ImGui.SameLine();
+            var color = partyMessageStatusIsError
+                ? new Vector4(1.0f, 0.35f, 0.35f, 1.0f)
+                : new Vector4(0.35f, 1.0f, 0.35f, 1.0f);
+            ImGui.TextColored(color, partyMessageStatus);
+        }
+
+        if (!PartyUtil.IsInParty())
+        {
+            ImGui.TextColored(new Vector4(1.0f, 0.7f, 0.2f, 1.0f),
+                "Join a party to test or send party chat messages.");
         }
 
         {
