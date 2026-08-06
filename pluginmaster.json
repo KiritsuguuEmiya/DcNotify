@@ -1,0 +1,28 @@
+[
+  {
+    "Author": "KiritsuguuEmiya",
+    "Name": "DcNotify",
+    "Punchline": "Discord push notifications for the Party Finder.",
+    "Description": "A plugin that uses your Discord Webhook to send a notification when party members join or leave, or when a duty finder queue is initiated. Forked from PushyFinder.",
+    "InternalName": "DcNotify",
+    "AssemblyVersion": "1.2.0.0",
+    "TestingAssemblyVersion": null,
+    "RepoUrl": "https://github.com/KiritsuguuEmiya/DcNotify",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 15,
+    "Tags": [
+      "party-finder",
+      "afk",
+      "notifications"
+    ],
+    "IsHide": false,
+    "IsTestingExclusive": false,
+    "SupportsProfiles": true,
+    "DownloadLinkInstall": "https://github.com/KiritsuguuEmiya/DcNotify/releases/download/v1.2.0/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/KiritsuguuEmiya/DcNotify/releases/download/v1.2.0/latest.zip",
+    "DownloadLinkTesting": "https://github.com/KiritsuguuEmiya/DcNotify/releases/download/v1.2.0/latest.zip",
+    "LastUpdate": 1786033629,
+    "DownloadCount": 0,
+    "IconUrl": "https://raw.githubusercontent.com/KiritsuguuEmiya/DcNotify/master/Images/icon.png"
+  }
+]

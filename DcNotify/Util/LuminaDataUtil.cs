@@ -1,5 +1,5 @@
 using System.Linq;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 
 namespace Dnc.Util;
 
@@ -7,9 +7,9 @@ public static class LuminaDataUtil
 {
     public static string GetJobAbbreviation(uint jobId)
     {
-        var jobEnum = Service.DataManager.GetExcelSheet<ClassJob>()!
-                             .Where(a => a.RowId == jobId);
-        var job = jobEnum.DefaultIfEmpty(null).FirstOrDefault();
-        return job == null ? "???" : job.Abbreviation.ToString();
+        var job = Service.DataManager.GetExcelSheet<ClassJob>()
+            .Where(a => a.RowId == jobId)
+            .FirstOrDefault();
+        return job.RowId == 0 ? "???" : job.Abbreviation.ToString();
     }
 }

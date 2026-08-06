@@ -1,33 +1,31 @@
+using System;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
-using System;
 
-namespace Dnc
+namespace Dnc;
+
+[Serializable]
+public class Configuration : IPluginConfiguration
 {
-    [Serializable]
-    public class Configuration : IPluginConfiguration
+    public int Version { get; set; } = 2;
+
+    public bool EnableForDutyPops { get; set; } = true;
+    public bool IgnoreAfkStatus { get; set; } = false;
+
+    public bool Enabled { get; set; } = true;
+
+    public string DcHook { get; set; } = "";
+
+    [NonSerialized]
+    private IDalamudPluginInterface? PluginInterface;
+
+    public void Initialize(IDalamudPluginInterface pluginInterface)
     {
-        public int Version { get; set; } = 1;
+        PluginInterface = pluginInterface;
+    }
 
-        public bool EnableForDutyPops { get; set; } = true;
-        public bool IgnoreAfkStatus { get; set; } = false;
-        
-        public bool Enabled { get; set; } = true;
-
-        // Optional: Specify the ntfy topic if needed
-        public string DcHook { get; set; } = "";
-
-        [NonSerialized]
-        private DalamudPluginInterface? PluginInterface;
-
-        public void Initialize(DalamudPluginInterface pluginInterface)
-        {
-            this.PluginInterface = pluginInterface;
-        }
-
-        public void Save()
-        {
-            this.PluginInterface!.SavePluginConfig(this);
-        }
+    public void Save()
+    {
+        PluginInterface!.SavePluginConfig(this);
     }
 }

@@ -1,105 +1,100 @@
 using Dalamud.Game.Command;
-using Dalamud.IoC;
-using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
+using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dnc.Impl;
 using Dnc.Util;
 using Dnc.Windows;
 
-namespace Dnc
+namespace Dnc;
+
+public sealed class Plugin : IDalamudPlugin
 {
-    public sealed class Plugin : IDalamudPlugin
-    {
-        public string Name => "DcN";
-        private const string CommandName = "/dcn";
-        private DalamudPluginInterface PluginInterface { get; init; }
-        private ICommandManager CommandManager { get; init; }
-        
-        // This *is* used.
+    public string Name => "DcN";
+    private const string CommandName = "/dcn";
+
+    private IDalamudPluginInterface PluginInterface { get; init; }
+    private ICommandManager CommandManager { get; init; }
+
 #pragma warning disable CS8618
-        public static Configuration Configuration { get; private set; }
+    public static Configuration Configuration { get; private set; }
 #pragma warning restore
-        
-        public WindowSystem WindowSystem = new("DcN");
 
-        private ConfigWindow ConfigWindow { get; init; }
+    public WindowSystem WindowSystem = new("DcN");
 
-        public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager)
+    private ConfigWindow ConfigWindow { get; init; }
+
+    public Plugin(
+        IDalamudPluginInterface pluginInterface,
+        ICommandManager commandManager)
+    {
+        pluginInterface.Create<Service>();
+
+        PluginInterface = pluginInterface;
+        CommandManager = commandManager;
+
+        Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Configuration.Initialize(PluginInterface);
+
+        ConfigWindow = new ConfigWindow(this);
+
+        WindowSystem.AddWindow(ConfigWindow);
+
+        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            pluginInterface.Create<Service>();
-            
-            this.PluginInterface = pluginInterface;
-            this.CommandManager = commandManager;
+            HelpMessage = "Opens settings\n't' toggles whether it's enabled.\n'on' enables the plugin\n'off' disables the plugin."
+        });
 
-            Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            Configuration.Initialize(this.PluginInterface);
-            
-            ConfigWindow = new ConfigWindow(this);
-            
-            WindowSystem.AddWindow(ConfigWindow);
+        PluginInterface.UiBuilder.Draw += DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-            this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-            {
-                HelpMessage = "Opens settings\n't' toggles whether it's enabled.\n'on' enables the plugin\n'off' disables the plugin."
-            });
+        CrossWorldPartyListSystem.Start();
+        PartyListener.On();
+        DutyListener.On();
+    }
 
-            this.PluginInterface.UiBuilder.Draw += DrawUI;
-            this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+    public void Dispose()
+    {
+        WindowSystem.RemoveAllWindows();
 
-            CrossWorldPartyListSystem.Start();
-            PartyListener.On();
-            DutyListener.On();
-        }
-        
+        ConfigWindow.Dispose();
 
-        public void Dispose()
+        CrossWorldPartyListSystem.Stop();
+        PartyListener.Off();
+        DutyListener.Off();
+
+        CommandManager.RemoveHandler(CommandName);
+    }
+
+    private void OnCommand(string command, string args)
+    {
+        switch (args.Trim())
         {
-            this.WindowSystem.RemoveAllWindows();
-            
-            ConfigWindow.Dispose();
-
-            CrossWorldPartyListSystem.Stop();
-            PartyListener.Off();
-            DutyListener.Off();
-
-            this.CommandManager.RemoveHandler(CommandName);
+            case "t" or "toggle":
+                Configuration.Enabled = !Configuration.Enabled;
+                Service.ChatGui.Print($"DcN plugin {(Configuration.Enabled ? "enabled" : "disabled")}.");
+                break;
+            case "on":
+                Configuration.Enabled = true;
+                Service.ChatGui.Print("DcN plugin enabled.");
+                break;
+            case "off":
+                Configuration.Enabled = false;
+                Service.ChatGui.Print("DcN plugin disabled.");
+                break;
+            case "":
+                ConfigWindow.IsOpen = true;
+                break;
         }
+    }
 
-        private void OnCommand(string command, string args)
-        {
-            
-            switch (args.Trim())
-            {
-                case "t" or "toggle":
-                    Configuration.Enabled = !Configuration.Enabled;
-                    Service.ChatGui.Print($"DcN plugin {(Configuration.Enabled ? "enabled" : "disabled")}.");
-                    break;
-                case "on":
-                    Configuration.Enabled = true;
-                    Service.ChatGui.Print($"DcN plugin enabled.");
-                    break;
-                case "off":
-                    Configuration.Enabled = false;
-                    Service.ChatGui.Print($"DcN plugin disabled.");
-                    break;
-                case "":
-                    ConfigWindow.IsOpen = true;
-                    break;
-            }
-        }
+    private void DrawUI()
+    {
+        WindowSystem.Draw();
+    }
 
-        private void DrawUI()
-        {
-            this.WindowSystem.Draw();
-        }
-
-        public void DrawConfigUI()
-        {
-            ConfigWindow.IsOpen = true;
-        }
+    public void DrawConfigUI()
+    {
+        ConfigWindow.IsOpen = true;
     }
 }

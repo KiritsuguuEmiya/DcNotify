@@ -1,17 +1,19 @@
 using System;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
+using Dalamud.Plugin;
 using Dnc.Delivery;
 using Dnc.Util;
-using ImGuiNET;
 
 namespace Dnc.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Configuration Configuration;
-    
+    private readonly Configuration Configuration;
+
+    private readonly TimedBool notifSentMessageTimer = new(3.0f);
+
     public ConfigWindow(Plugin plugin) : base(
         "DcN Configuration",
         ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
@@ -22,37 +24,31 @@ public class ConfigWindow : Window, IDisposable
 
     public void Dispose() { }
 
-    private TimedBool notifSentMessageTimer = new(3.0f);
-
     public override void Draw()
     {
         {
             var cfg = Configuration.Enabled;
             if (ImGui.Checkbox("Enable/Disable Plugin", ref cfg))
-            {
                 Configuration.Enabled = cfg;
-            }
         }
+
         {
-            var cfg = Configuration.DcHook;
-            if (ImGui.InputText("Webook Url", ref cfg, 2048u))
-            {
+            var cfg = Configuration.DcHook ?? string.Empty;
+            if (ImGui.InputText("Webhook URL", ref cfg, 2048))
                 Configuration.DcHook = cfg;
-            }
         }
+
         {
             var cfg = Configuration.EnableForDutyPops;
             if (ImGui.Checkbox("Send message for duty pop?", ref cfg))
-            {
                 Configuration.EnableForDutyPops = cfg;
-            }
         }
 
         if (ImGui.Button("Send test notification"))
         {
             notifSentMessageTimer.Start();
-            DncDelivery.Deliver("Test notification", 
-                                     "If you received this, DcN is configured correctly.");
+            DncDelivery.Deliver("Test notification",
+                "If you received this, DcN is configured correctly.");
         }
 
         if (notifSentMessageTimer.Value)
@@ -64,9 +60,7 @@ public class ConfigWindow : Window, IDisposable
         {
             var cfg = Configuration.IgnoreAfkStatus;
             if (ImGui.Checkbox("Ignore AFK status and always notify", ref cfg))
-            {
                 Configuration.IgnoreAfkStatus = cfg;
-            }
         }
 
         if (!Configuration.IgnoreAfkStatus)
@@ -92,10 +86,18 @@ public class ConfigWindow : Window, IDisposable
             }
         }
 
+        if (PluginInterface.IsInProfile)
+        {
+            ImGui.TextColored(new Vector4(0.6f, 0.8f, 1.0f, 1.0f),
+                "This plugin uses your active Dalamud collection profile for settings.");
+        }
+
         if (ImGui.Button("Save and close"))
         {
             Configuration.Save();
             IsOpen = false;
         }
     }
+
+    private static IDalamudPluginInterface PluginInterface => Service.PluginInterface;
 }

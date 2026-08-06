@@ -1,58 +1,64 @@
+using System;
 using System.Threading.Tasks;
-using Dalamud.Logging;
+using Dalamud.Utility;
 using Flurl.Http;
-using Newtonsoft.Json;
 
-namespace Dnc.Delivery
-{
+namespace Dnc.Delivery;
+
 public static class DncDelivery
 {
     public static void Deliver(string title, string text = "")
     {
+        if (Plugin.Configuration.DcHook.IsNullOrWhitespace())
+        {
+            Service.PluginLog.Debug("Discord webhook URL not configured, skipping notification.");
+            return;
+        }
+
+        if (!Uri.IsWellFormedUriString(Plugin.Configuration.DcHook, UriKind.Absolute))
+        {
+            Service.PluginLog.Warning("Discord webhook URL is invalid, skipping notification.");
+            return;
+        }
+
         Task.Run(() => DeliverAsync(title, text));
     }
 
     private static async Task DeliverAsync(string title, string text)
     {
-        // Replace 'YOUR_DISCORD_WEBHOOK_URL' with your actual Discord webhook URL
         var discordWebhookUrl = Plugin.Configuration.DcHook;
 
-        // Constructing the payload for Discord webhook
         var payload = new
         {
             username = "DcN",
-            avatar_url= "https://i.imgur.com/wAhXLxp.png",
+            avatar_url = "https://i.imgur.com/wAhXLxp.png",
             embeds = new[]
             {
                 new
                 {
                     title = title,
                     description = text,
-                    color = 16711680 // You can change the color here (e.g., 16711680 is red)
+                    color = 16711680
                 }
             }
-            //content = title + " " + text
         };
 
         try
         {
-            
-            // Sending the payload to Discord webhook URL
-            await discordWebhookUrl
-                .PostJsonAsync(payload);
+            await discordWebhookUrl.PostJsonAsync(payload);
+            Service.PluginLog.Debug("Sent Discord notification.");
         }
         catch (FlurlHttpException e)
         {
             if (e.Call.Response != null)
             {
-                PluginLog.Error($"Failed to send notification to Discord webhook. Status code: {e.Call.Response.StatusCode}, response body: {await e.GetResponseStringAsync()}");
+                Service.PluginLog.Error(
+                    $"Failed to send notification to Discord webhook. Status code: {e.Call.Response.StatusCode}, response body: {await e.GetResponseStringAsync()}");
             }
             else
             {
-                PluginLog.Error($"Failed to send notification to Discord webhook: '{e.Message}'");
-                PluginLog.Error($"{e.StackTrace}");
+                Service.PluginLog.Error($"Failed to send notification to Discord webhook: '{e.Message}'");
             }
         }
     }
-}
 }
