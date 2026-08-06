@@ -48,7 +48,7 @@ dotnet build DcNotify/DcNotify.csproj -c Release
 Add as a dev plugin in XIVLauncher:
 
 ```
-C:\Users\vince\Documents\DcNotify\DcNotify\bin\Release\DcNotify.dll
+<PATH_TO_DC_NOTIFY>\DcNotify\bin\Release\DcNotify.dll
 ```
 
 ## Releases
