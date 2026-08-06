@@ -40,11 +40,11 @@ jobs:
           echo "DalamudLibPath=$($devPath.FullName)" >> $env:GITHUB_ENV
 
       - name: Build
-        run: dotnet build DcNotify/DcNotify.csproj -c Release
+        run: dotnet build DcNotify/DcNotify.csproj -c Release -p:Platform=x64 --no-incremental
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          files: DcNotify/bin/Release/DcNotify/latest.zip
+          files: DcNotify/bin/x64/Release/DcNotify/latest.zip
           generate_release_notes: true
