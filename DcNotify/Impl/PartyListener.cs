@@ -24,6 +24,9 @@ public static class PartyListener
         if (!CharacterUtil.IsClientAfk()) return;
         if (!Plugin.Configuration.Enabled) return;
 
+        if (m.PartyCount != 8 && !Plugin.Configuration.ShouldNotifyForClassJob(m.JobId))
+            return;
+
         var jobAbbr = LuminaDataUtil.GetJobAbbreviation(m.JobId);
 
         if (m.PartyCount == 8)

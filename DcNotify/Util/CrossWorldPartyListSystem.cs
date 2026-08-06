@@ -23,6 +23,7 @@ public static class CrossWorldPartyListSystem
 
     private static readonly List<CrossWorldMember> members = new();
     private static List<CrossWorldMember> oldMembers = new();
+    private static bool hasBaseline;
 
     public static void Start()
     {
@@ -32,6 +33,14 @@ public static class CrossWorldPartyListSystem
     public static void Stop()
     {
         Service.Framework.Update -= Update;
+        ResetState();
+    }
+
+    private static void ResetState()
+    {
+        members.Clear();
+        oldMembers.Clear();
+        hasBaseline = false;
     }
 
     private static bool ListContainsMember(List<CrossWorldMember> l, CrossWorldMember m)
@@ -40,10 +49,16 @@ public static class CrossWorldPartyListSystem
     private static unsafe void Update(IFramework framework)
     {
         if (!Service.ClientState.IsLoggedIn)
+        {
+            ResetState();
             return;
+        }
 
         if (!InfoProxyCrossRealm.IsCrossRealmParty())
+        {
+            ResetState();
             return;
+        }
 
         members.Clear();
         var partyCount = InfoProxyCrossRealm.GetPartyMemberCount();
@@ -60,19 +75,23 @@ public static class CrossWorldPartyListSystem
             members.Add(mObj);
         }
 
-        if (members.Count != oldMembers.Count)
+        if (!hasBaseline)
         {
-            foreach (var i in members)
-            {
-                if (!ListContainsMember(oldMembers, i))
-                    OnJoin?.Invoke(i);
-            }
+            oldMembers = members.ToList();
+            hasBaseline = true;
+            return;
+        }
 
-            foreach (var i in oldMembers)
-            {
-                if (!ListContainsMember(members, i))
-                    OnLeave?.Invoke(i);
-            }
+        foreach (var i in members)
+        {
+            if (!ListContainsMember(oldMembers, i))
+                OnJoin?.Invoke(i);
+        }
+
+        foreach (var i in oldMembers)
+        {
+            if (!ListContainsMember(members, i))
+                OnLeave?.Invoke(i);
         }
 
         oldMembers = members.ToList();

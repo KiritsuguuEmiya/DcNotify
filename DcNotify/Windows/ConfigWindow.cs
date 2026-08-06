@@ -16,10 +16,11 @@ public class ConfigWindow : Window, IDisposable
 
     public ConfigWindow(Plugin plugin) : base(
         "DcN Configuration",
-        ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
-        ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize)
+        ImGuiWindowFlags.NoCollapse)
     {
         Configuration = Plugin.Configuration;
+        Size = new Vector2(560, 680);
+        SizeCondition = ImGuiCond.FirstUseEver;
     }
 
     public void Dispose() { }
@@ -85,6 +86,8 @@ public class ConfigWindow : Window, IDisposable
                 ImGui.TextColored(green, "You are AFK. The plugin is active and notifications will be served.");
             }
         }
+
+        ClassJobSelector.Draw(Configuration);
 
         if (PluginInterface.IsInProfile)
         {
