@@ -10,12 +10,12 @@ Fork of [PushyFinder](https://github.com/snightshade/PushyFinder).
 2. Click the **Settings** gear → **Custom Plugin Repositories**
 3. Add this URL:
    ```
-   https://raw.githubusercontent.com/KiritsuguuEmiya/DalamudPlugins/main/pluginmaster.json
+   https://raw.githubusercontent.com/Kiri12121212/DalamudPlugins/main/pluginmaster.json
    ```
 4. Click **Save**, then refresh the plugin list
 5. Install **DcNotify**
 
-Shared custom repo: [KiritsuguuEmiya/DalamudPlugins](https://github.com/KiritsuguuEmiya/DalamudPlugins) (also lists HuntTrainAuto).
+Shared custom repo: [Kiri12121212/DalamudPlugins](https://github.com/Kiri12121212/DalamudPlugins) (also lists HuntTrainAuto).
 
 ## Discord Setup
 

@@ -1,11 +1,11 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Authors>KiritsuguuEmiya</Authors>
+    <Authors>Kiri12121212</Authors>
     <Company></Company>
     <Version>1.5.0.0</Version>
     <Description>Check on your party while away from the computer.</Description>
     <Copyright>(C) 2024-2026</Copyright>
-    <PackageProjectUrl>https://github.com/KiritsuguuEmiya/DcNotify</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Kiri12121212/DcNotify</PackageProjectUrl>
     <RootNamespace>DcNotify</RootNamespace>
   </PropertyGroup>
 
