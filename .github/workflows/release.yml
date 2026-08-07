@@ -29,15 +29,32 @@ jobs:
       - name: Restore Dalamud dev libraries
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
           $dalamudHome = "$env:GITHUB_WORKSPACE/.dalamud"
           New-Item -ItemType Directory -Force -Path $dalamudHome | Out-Null
           $versionInfo = Invoke-RestMethod -Uri "https://kamori.goats.dev/Dalamud/Release/VersionInfo"
           $zipPath = Join-Path $env:RUNNER_TEMP "dalamud.zip"
-          Invoke-WebRequest -Uri $versionInfo.downloadUrl -OutFile $zipPath
+          Invoke-WebRequest -Uri $versionInfo.downloadUrl -OutFile $zipPath -UseBasicParsing
           Expand-Archive -Path $zipPath -DestinationPath $dalamudHome -Force
-          $devPath = Get-ChildItem -Path $dalamudHome -Recurse -Directory -Filter dev | Select-Object -First 1
-          if (-not $devPath) { throw "Could not find Dalamud dev folder in downloaded archive." }
-          echo "DalamudLibPath=$($devPath.FullName)" >> $env:GITHUB_ENV
+          # Distrib zip is flat (Dalamud.dll at root). Older layouts nested under a `dev` folder.
+          $devPath = Get-ChildItem -Path $dalamudHome -Recurse -Directory -Filter dev -ErrorAction SilentlyContinue |
+            Where-Object { Test-Path (Join-Path $_.FullName 'Dalamud.dll') } |
+            Select-Object -First 1
+          if ($devPath) {
+            $libPath = $devPath.FullName
+          } elseif (Test-Path (Join-Path $dalamudHome 'Dalamud.dll')) {
+            $libPath = $dalamudHome
+          } else {
+            $dll = Get-ChildItem -Path $dalamudHome -Recurse -Filter Dalamud.dll | Select-Object -First 1
+            if (-not $dll) { throw "Could not find Dalamud.dll in downloaded archive." }
+            $libPath = $dll.Directory.FullName
+          }
+          if (-not $libPath.EndsWith([IO.Path]::DirectorySeparatorChar) -and -not $libPath.EndsWith([IO.Path]::AltDirectorySeparatorChar)) {
+            $libPath += [IO.Path]::DirectorySeparatorChar
+          }
+          Write-Host "DalamudLibPath=$libPath"
+          "DalamudLibPath=$libPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build
         run: dotnet build DcNotify/DcNotify.csproj -c Release -p:Platform=x64 --no-incremental
