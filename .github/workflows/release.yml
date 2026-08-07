@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build and publish (e.g. v1.3.0)'
+        description: 'Tag to build and publish (e.g. v1.5.0)'
         required: true
         default: 'v1.5.0'
 
@@ -37,7 +37,6 @@ jobs:
           $zipPath = Join-Path $env:RUNNER_TEMP "dalamud.zip"
           Invoke-WebRequest -Uri $versionInfo.downloadUrl -OutFile $zipPath -UseBasicParsing
           Expand-Archive -Path $zipPath -DestinationPath $dalamudHome -Force
-          # Distrib zip is flat (Dalamud.dll at root). Older layouts nested under a `dev` folder.
           $devPath = Get-ChildItem -Path $dalamudHome -Recurse -Directory -Filter dev -ErrorAction SilentlyContinue |
             Where-Object { Test-Path (Join-Path $_.FullName 'Dalamud.dll') } |
             Select-Object -First 1
@@ -54,10 +53,19 @@ jobs:
             $libPath += [IO.Path]::DirectorySeparatorChar
           }
           Write-Host "DalamudLibPath=$libPath"
+          "DALAMUD_HOME=$libPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "DalamudLibPath=$libPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build
-        run: dotnet build DcNotify/DcNotify.csproj -c Release -p:Platform=x64 --no-incremental
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:DalamudLibPath) { throw "DalamudLibPath env is empty." }
+          if (-not (Test-Path (Join-Path $env:DalamudLibPath 'Dalamud.dll'))) {
+            throw "Dalamud.dll missing under $($env:DalamudLibPath)"
+          }
+          dotnet build DcNotify/DcNotify.csproj -c Release -p:Platform=x64 "-p:DalamudLibPath=$($env:DalamudLibPath)" --no-incremental
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package as DcNotify.zip
         shell: pwsh
