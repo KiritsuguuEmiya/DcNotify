@@ -59,9 +59,22 @@ jobs:
       - name: Build
         run: dotnet build DcNotify/DcNotify.csproj -c Release -p:Platform=x64 --no-incremental
 
+      - name: Package as DcNotify.zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $src = "DcNotify/bin/x64/Release/DcNotify/latest.zip"
+          if (-not (Test-Path $src)) {
+            $src = Get-ChildItem -Path "DcNotify/bin" -Recurse -Filter "latest.zip" |
+              Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $src) { throw "Packaged latest.zip not found under DcNotify/bin." }
+          Copy-Item -Path $src -Destination "DcNotify.zip" -Force
+          Write-Host "Packaged $($src) -> DcNotify.zip"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          files: DcNotify/bin/x64/Release/DcNotify/latest.zip
+          files: DcNotify.zip
           generate_release_notes: true
